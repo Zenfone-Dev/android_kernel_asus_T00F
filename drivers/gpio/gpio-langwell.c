@@ -255,6 +255,8 @@ struct lnw_gpio {
 	u32			chip_irq_type;
 	int			type;
 	struct gpio_debug	*debug;
+	bool			log_enable;
+	u32			*log_pending;
 };
 
 #define to_lnw_priv(chip)	container_of(chip, struct lnw_gpio, chip)
@@ -778,20 +780,36 @@ static void lnw_irq_handler(unsigned irq, struct irq_desc *desc)
 	void __iomem *gp_reg;
 	enum GPIO_REG reg_type;
 	struct irq_desc *lnw_irq_desc;
-	unsigned int lnw_irq;
+	unsigned int lnw_irq, i;
+	bool blog;
+
 #ifdef CONFIG_XEN
 	lnw = xen_irq_get_handler_data(irq);
 #else
 	lnw = irq_data_get_irq_handler_data(data);
 #endif /* CONFIG_XEN */
 
+	/* log only the wakeup */
+	blog = lnw->log_enable;
+	lnw->log_enable = false;
+
 	debug = lnw->debug;
 
 	reg_type = (lnw->type == TANGIER_GPIO) ? GISR : GEDR;
 
 	/* check GPIO controller to check which pin triggered the interrupt */
-	for (base = 0; base < lnw->chip.ngpio; base += 32) {
+	for (base = 0, i = 0; base < lnw->chip.ngpio; base += 32, i++) {
 		gp_reg = gpio_reg(&lnw->chip, base, reg_type);
+
+		/* save gpio interrupt status register for logging */
+		if (blog && lnw->log_pending) {
+			pending = (lnw->type != TANGIER_GPIO) ?
+				  readl(gp_reg) :
+				  (readl(gp_reg) &
+				  readl(gpio_reg(&lnw->chip, base, GIMR)));
+			lnw->log_pending[i] = (u32)pending;
+		}
+
 		while ((pending = (lnw->type != TANGIER_GPIO) ?
 			readl(gp_reg) :
 			(readl(gp_reg) &
@@ -1270,10 +1288,55 @@ static int lnw_gpio_runtime_idle(struct device *dev)
 	return -EBUSY;
 }
 
+static int lnw_gpio_suspend_noirq(struct device *dev)
+{
+	struct lnw_gpio *lnw = dev_get_drvdata(dev);
+
+	/*
+	 * At this point GPIO INT is disabled. We can
+	 * safely enable logging of GPIO wakeups.
+	 */
+	if (!lnw || !lnw->log_pending)
+		return 0;
+
+	memset(lnw->log_pending, 0, (lnw->chip.ngpio / 32) * sizeof(u32));
+	lnw->log_enable = true;
+	return 0;
+}
+
+static int lnw_gpio_resume(struct device *dev)
+{
+	int i, gpio, base, nreg;
+	unsigned long pending;
+	struct lnw_gpio *lnw = dev_get_drvdata(dev);
+
+	/*
+	 * At this point GPIO INT has been enabled and any pending
+	 * GPIO IRQ should have already been executed. So, we can
+	 * now proceed with the logging of GPIO wakeups.
+	 */
+	if (!lnw || !lnw->log_pending)
+		return 0;
+
+	lnw->log_enable = false;
+	nreg = lnw->chip.ngpio / 32;
+	for (i = 0, base = 0; i < nreg; i++, base += 32) {
+		pending = (unsigned long)lnw->log_pending[i];
+		while (pending && ((gpio = __ffs(pending)) != 0)) {
+			dev_info(dev, "wakeup from GPIO %d",
+				lnw->chip.base + base + gpio);
+			pending &= ~BIT(gpio);
+		}
+	}
+	return 0;
+}
+
 static const struct dev_pm_ops lnw_gpio_pm_ops = {
 	SET_RUNTIME_PM_OPS(lnw_gpio_runtime_suspend,
 			   lnw_gpio_runtime_resume,
 			   lnw_gpio_runtime_idle)
+	.suspend_noirq = lnw_gpio_suspend_noirq,
+	.resume = lnw_gpio_resume
 };
 
 static int lnw_gpio_probe(struct pci_dev *pdev,
@@ -1351,6 +1414,12 @@ static int lnw_gpio_probe(struct pci_dev *pdev,
 	lnw->chip.set_debounce = lnw_gpio_set_debounce;
 	lnw->chip.dev = &pdev->dev;
 	lnw->pdev = pdev;
+	lnw->log_enable = false;
+	lnw->log_pending = devm_kzalloc(&pdev->dev,
+					sizeof(u32) * (ddata->ngpio / 32),
+					GFP_KERNEL);
+	if (!lnw->log_pending)
+		dev_err(&pdev->dev, "can't allocate log_pending data\n");
 	spin_lock_init(&lnw->lock);
 	lnw->domain = irq_domain_add_simple(pdev->dev.of_node,
 					    lnw->chip.ngpio, irq_base,
