@@ -44,6 +44,21 @@ extern void register_rpmsg_service(char *name, int id, u32 addr);
 extern int sdhci_pci_request_regulators(void);
 extern unsigned int sfi_get_watchdog_irq(void);
 
+enum reboot_force_type {
+	REBOOT_FORCE_COLD_RESET = 1,
+	REBOOT_FORCE_COLD_BOOT,
+	REBOOT_FORCE_OFF,
+	REBOOT_FORCE_ON
+};
+
+#ifdef CONFIG_X86_INTEL_MID
+extern void set_reboot_force(enum reboot_force_type type);
+extern enum reboot_force_type get_reboot_force(void);
+#else
+static inline void set_reboot_force(enum reboot_force_type type) {};
+static inline void get_reboot_force(void) {};
+#endif
+
 /* OEMB table */
 struct sfi_table_oemb {
 	struct sfi_table_header header;
