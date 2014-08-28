@@ -280,6 +280,9 @@ static irqreturn_t watchdog_warning_interrupt(int irq, void *dev_id)
 
 	/* Let's reset the platform after dumping some data */
 	trigger_all_cpu_backtrace();
+
+	/* let the watchdog expire to reset the platform */
+	set_reboot_force(REBOOT_FORCE_ON);
 	panic("Kernel Watchdog");
 
 	/* This code should not be reached */
@@ -519,6 +522,7 @@ static int reboot_notifier(struct notifier_block *this,
 
 		switch (code) {
 		case SYS_RESTART:
+			watchdog_device.reboot_flag = true;
 			ret = watchdog_set_reset_type(
 				watchdog_device.reboot_wd_action);
 			break;
@@ -535,8 +539,11 @@ static int reboot_notifier(struct notifier_block *this,
 #ifdef CONFIG_DEBUG_FS
 		/* debugfs entry to generate a BUG during
 		any shutdown/reboot call */
-		if (watchdog_device.panic_reboot_notifier)
+		if (watchdog_device.panic_reboot_notifier) {
+			/* let the watchdog expire to reset the platform */
+			set_reboot_force(REBOOT_FORCE_ON);
 			BUG();
+		}
 #endif
 		/* Don't do instant reset on close */
 		reset_on_release = false;
@@ -588,6 +595,9 @@ static int kwd_trigger_write(struct file *file, const char __user *buff,
 			     size_t count, loff_t *ppos)
 {
 	pr_debug("kwd_trigger_write\n");
+
+	/* let the watchdog expire to reset the platform */
+	set_reboot_force(REBOOT_FORCE_ON);
 	BUG();
 	return 0;
 }
@@ -1168,28 +1178,49 @@ int remove_watchdog_sysfs_files(void)
 	return 0;
 }
 
-/* tasklet for configuring watchdog timers on panic */
-static void watchdog_panic_tasklet_body(unsigned long data)
+void decode_reboot_force(int watchdog_action)
 {
-	int ret = 0;
-
-	/* trigger reset after RESET_ON_PANIC_TIMEOUT, we set timeout and pretimeout */
-	/* to the same value, and restart counters */
-	ret = watchdog_config_and_start(RESET_ON_PANIC_TIMEOUT, RESET_ON_PANIC_TIMEOUT);
-	if (ret)
-		pr_err("can't start timer\n");
+	switch (watchdog_action) {
+	case SCU_COLD_RESET_ON_TIMEOUT:
+		set_reboot_force(REBOOT_FORCE_COLD_RESET);
+		break;
+	case SCU_COLD_BOOT_ON_TIMEOUT:
+		set_reboot_force(REBOOT_FORCE_COLD_BOOT);
+		break;
+	case SCU_COLD_OFF_ON_TIMEOUT:
+		set_reboot_force(REBOOT_FORCE_OFF);
+		break;
+	case SCU_DO_NOTHING_ON_TIMEOUT:
+		set_reboot_force(REBOOT_FORCE_ON);
+		break;
+	default:
+		set_reboot_force(REBOOT_FORCE_COLD_RESET);
+	}
 }
 
 /* This is the callback function launched when kernel panic() function */
-/* is executed. In that case we force the SCU to reset due to kernel   */
-/* watchdog after RESET_ON_PANIC_TIMEOUT and we bypass the warning     */
-/* interrupt  mechanism.                                               */
+/* is executed.                                                        */
 static int watchdog_panic_handler(struct notifier_block *this,
 				  unsigned long         event,
 				  void                  *unused)
 {
-	if (disable_kernel_watchdog == false)
-		tasklet_schedule(&watchdog_device.panic_tasklet);
+	/* don't allow kicking anymore */
+	kicking_active = false;
+
+	if (disable_kernel_watchdog == true) {
+		set_reboot_force(REBOOT_FORCE_ON);
+		return NOTIFY_OK;
+	}
+
+	if (get_reboot_force() == REBOOT_FORCE_ON)
+		return NOTIFY_OK;
+
+	if (watchdog_device.reboot_flag == true)
+		decode_reboot_force(watchdog_device.reboot_wd_action);
+	else if (watchdog_device.shutdown_flag == true)
+		decode_reboot_force(watchdog_device.shutdown_wd_action);
+	else
+		decode_reboot_force(watchdog_device.normal_wd_action);
 
 	return NOTIFY_OK;
 }
@@ -1216,6 +1247,7 @@ static int intel_scu_watchdog_init(void)
 
 	/* Initially, we are not in shutdown mode */
 	watchdog_device.shutdown_flag = false;
+	watchdog_device.reboot_flag = false;
 
 	/* Check timeouts boot parameter */
 	if (check_timeouts(pre_timeout, timeout)) {
@@ -1270,10 +1302,6 @@ static int intel_scu_watchdog_init(void)
 		pr_err("error value returned is %d\n", ret);
 		goto error_misc_register;
 	}
-
-	/* set up the tasklet for handling panic duties */
-	tasklet_init(&watchdog_device.panic_tasklet,
-		watchdog_panic_tasklet_body, (unsigned long)0);
 
 #ifdef CONFIG_INTEL_SCU_SOFT_LOCKUP
 	init_timer(&softlock_timer);

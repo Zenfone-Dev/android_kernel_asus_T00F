@@ -59,6 +59,7 @@ struct intel_scu_watchdog_dev {
 	struct notifier_block reboot_notifier;
 	struct miscdevice miscdev;
 	bool shutdown_flag;
+	bool reboot_flag;
 	struct tasklet_struct interrupt_tasklet;
 	int reset_type;
 	int normal_wd_action;

@@ -376,6 +376,9 @@ static irqreturn_t watchdog_warning_interrupt(int irq, void *dev_id)
 
 	/* Let's reset the platform after dumping some data */
 	trigger_all_cpu_backtrace();
+
+	/* let the watchdog expire to reset the platform */
+	set_reboot_force(REBOOT_FORCE_ON);
 	panic("Kernel Watchdog");
 
 	/* This code should not be reached */
@@ -668,6 +671,7 @@ static int reboot_notifier(struct notifier_block *this,
 
 		switch (code) {
 		case SYS_RESTART:
+			watchdog_device.reboot_flag = true;
 			ret = watchdog_set_reset_type(
 				watchdog_device.reboot_wd_action);
 			break;
@@ -684,8 +688,11 @@ static int reboot_notifier(struct notifier_block *this,
 #ifdef CONFIG_DEBUG_FS
 		/* debugfs entry to generate a BUG during
 		any shutdown/reboot call */
-		if (watchdog_device.panic_reboot_notifier)
+		if (watchdog_device.panic_reboot_notifier) {
+			/* let the watchdog expire to reset the platform */
+			set_reboot_force(REBOOT_FORCE_ON);
 			BUG();
+		}
 #endif
 		/* Don't do instant reset on close */
 		reset_on_release = false;
@@ -737,6 +744,9 @@ static int kwd_trigger_write(struct file *file, const char __user *buff,
 			     size_t count, loff_t *ppos)
 {
 	pr_debug("kwd_trigger_write\n");
+
+	/* let the watchdog expire to reset the platform */
+	set_reboot_force(REBOOT_FORCE_ON);
 	BUG();
 	return 0;
 }
@@ -1310,6 +1320,59 @@ int remove_watchdog_sysfs_files(void)
 	return 0;
 }
 
+void decode_reboot_force(int watchdog_action)
+{
+	switch (watchdog_action) {
+	case IPC_SET_SUB_COLDRESET:
+		set_reboot_force(REBOOT_FORCE_COLD_RESET);
+		break;
+	case IPC_SET_SUB_COLDBOOT:
+		set_reboot_force(REBOOT_FORCE_COLD_BOOT);
+		break;
+	case IPC_SET_SUB_COLDOFF:
+		set_reboot_force(REBOOT_FORCE_OFF);
+		break;
+	case IPC_SET_SUB_DONOTHING:
+		set_reboot_force(REBOOT_FORCE_ON);
+		break;
+	default:
+		set_reboot_force(REBOOT_FORCE_COLD_RESET);
+	}
+}
+
+/* This is the callback function launched when kernel panic() function */
+/* is executed.                                                        */
+static int watchdog_panic_handler(struct notifier_block *this,
+				  unsigned long         event,
+				  void                  *unused)
+{
+	/* don't allow kicking anymore */
+	kicking_active = false;
+
+	if (disable_kernel_watchdog == true) {
+		set_reboot_force(REBOOT_FORCE_ON);
+		return NOTIFY_OK;
+	}
+
+	if (get_reboot_force() == REBOOT_FORCE_ON)
+		return NOTIFY_OK;
+
+	if (watchdog_device.reboot_flag == true)
+		decode_reboot_force(watchdog_device.reboot_wd_action);
+	else if (watchdog_device.shutdown_flag == true)
+		decode_reboot_force(watchdog_device.shutdown_wd_action);
+	else
+		decode_reboot_force(watchdog_device.normal_wd_action);
+
+	return NOTIFY_OK;
+}
+
+static struct notifier_block watchdog_panic_notifier = {
+	.notifier_call	= watchdog_panic_handler,
+	.next		= NULL,
+	.priority	= 150	/* priority: INT_MAX >= x >= 0 */
+};
+
 /* Init code */
 static int intel_scu_watchdog_init(void)
 {
@@ -1325,6 +1388,7 @@ static int intel_scu_watchdog_init(void)
 
 	/* Initially, we are not in shutdown mode */
 	watchdog_device.shutdown_flag = false;
+	watchdog_device.reboot_flag = false;
 
 	/* Check timeouts boot parameter */
 	if (check_timeouts(timer_timeout, pre_timeout, timeout)) {
@@ -1373,6 +1437,13 @@ static int intel_scu_watchdog_init(void)
 		goto error_stop_timer;
 	}
 
+	ret = atomic_notifier_chain_register(&panic_notifier_list,
+			&watchdog_panic_notifier);
+	if (ret) {
+		pr_crit("cannot register panic notifier %d\n", ret);
+		goto error_reboot_notifier;
+	}
+
 	/* Do not publish the watchdog device when disable (TO BE REMOVED) */
 	if (!disable_kernel_watchdog) {
 		watchdog_device.miscdev.minor = WATCHDOG_MINOR;
@@ -1383,7 +1454,7 @@ static int intel_scu_watchdog_init(void)
 		if (ret) {
 			pr_crit(PFX "Cannot register miscdev %d err =%d\n",
 				WATCHDOG_MINOR, ret);
-			goto error_reboot_notifier;
+			goto error_panic_notifier;
 		}
 	}
 
@@ -1461,6 +1532,10 @@ error_request_irq:
 error_misc_register:
 	misc_deregister(&watchdog_device.miscdev);
 
+error_panic_notifier:
+	atomic_notifier_chain_unregister(&panic_notifier_list,
+						 &watchdog_panic_notifier);
+
 error_reboot_notifier:
 	unregister_reboot_notifier(&watchdog_device.reboot_notifier);
 
@@ -1489,6 +1564,8 @@ static void intel_scu_watchdog_exit(void)
 
 	misc_deregister(&watchdog_device.miscdev);
 	unregister_reboot_notifier(&watchdog_device.reboot_notifier);
+	atomic_notifier_chain_unregister(&panic_notifier_list,
+						 &watchdog_panic_notifier);
 }
 
 static int watchdog_rpmsg_probe(struct rpmsg_channel *rpdev)
