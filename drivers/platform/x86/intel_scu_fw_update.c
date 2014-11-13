@@ -35,7 +35,6 @@
 #include <asm/intel_mid_rpmsg.h>
 #include <asm/intel-mid.h>
 #include <asm/msr.h>
-#include <asm/proto.h>
 
 /* Medfield & Cloverview firmware update.
  * The flow and communication between IA and SCU has changed for
@@ -478,8 +477,7 @@ static int intel_scu_ipc_medfw_upgrade(void)
 		BUG();
 	}
 
-	if (reboot_force)
-		rpmsg_global_lock();
+	rpmsg_global_lock();
 
 	mfld_fw_upd.wscu = 0;
 	mfld_fw_upd.wia = 0;
@@ -551,13 +549,9 @@ static int intel_scu_ipc_medfw_upgrade(void)
 	mb();
 
 	/* Write cmd to trigger an interrupt to SCU for firmware update*/
-	if (reboot_force)
-		ret_val = rpmsg_send_simple_command(fw_update_instance,
-						IPCMSG_FW_UPDATE,
-						IPC_CMD_FW_UPDATE_GO);
-	else
-		ret_val = intel_scu_ipc_raw_cmd(IPCMSG_FW_UPDATE,
-			IPC_CMD_FW_UPDATE_GO, NULL, 0, NULL, 0, 0, 0);
+	ret_val = rpmsg_send_simple_command(fw_update_instance,
+					    IPCMSG_FW_UPDATE,
+					    IPC_CMD_FW_UPDATE_GO);
 
 	if (ret_val) {
 		dev_err(fui.dev, "IPC_CMD_FW_UPDATE_GO failed\n");
@@ -642,8 +636,7 @@ unmap_mb:
 unmap_sram:
 	iounmap(mfld_fw_upd.sram);
 out_unlock:
-	if (reboot_force)
-		rpmsg_global_unlock();
+	rpmsg_global_unlock();
 
 	return ret_val;
 }
