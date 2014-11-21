@@ -272,16 +272,21 @@ static void init_charger_cables(struct charger_cable *cable_lst, int count)
 static inline int is_charging_can_be_enabled(struct power_supply *psy)
 {
 	int health;
+	bool result;
 
 	health = HEALTH(psy);
 	if (IS_BATTERY(psy)) {
 		return (health == POWER_SUPPLY_HEALTH_GOOD) ||
 				(health == POWER_SUPPLY_HEALTH_DEAD);
 	} else {
-		return
-	((CURRENT_THROTTLE_ACTION(psy) != PSY_THROTTLE_DISABLE_CHARGER) &&
-	(CURRENT_THROTTLE_ACTION(psy) != PSY_THROTTLE_DISABLE_CHARGING) &&
-	(INLMT(psy) >= 100) && (health == POWER_SUPPLY_HEALTH_GOOD));
+		result = ((CURRENT_THROTTLE_ACTION(psy) != PSY_THROTTLE_DISABLE_CHARGER) &&
+			(CURRENT_THROTTLE_ACTION(psy) != PSY_THROTTLE_DISABLE_CHARGING) &&
+			(INLMT(psy) >= 100) && (health == POWER_SUPPLY_HEALTH_GOOD));
+		if (!result)
+			pr_err("%s: Can't enable charge. throttle_action=%d, inlmt=%d, health=%d\n",
+					__func__,
+					CURRENT_THROTTLE_ACTION(psy), INLMT(psy), health);
+	return result;
 	}
 }
 
