@@ -26,6 +26,10 @@
 
 #include <linux/gpio.h>
 
+#ifdef CONFIG_ANDROID_TIMED_OUTPUT
+struct vibra_tmr;
+#endif /* CONFIG_ANDROID_TIMED_OUTPUT */
+
 struct vibra_info {
 	int     enabled;
 	struct mutex	lock;
@@ -41,6 +45,10 @@ struct vibra_info {
 	int alt_fn;
 	int ext_drv;
 	bool use_gpio_en; /* Whether vibra uses gpio based enable control */
+
+#ifdef CONFIG_ANDROID_TIMED_OUTPUT
+	struct vibra_tmr *tmr;
+#endif /* CONFIG_ANDROID_TIMED_OUTPUT */
 
 	void (*enable)(struct vibra_info *info);
 	void (*disable)(struct vibra_info *info);
