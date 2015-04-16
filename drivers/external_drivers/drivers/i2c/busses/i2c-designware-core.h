@@ -106,10 +106,10 @@
 /*
  * status codes
  */
-#define STATUS_POWERON			0x0
-#define STATUS_IDLE			STATUS_POWERON
+#define STATUS_IDLE			0x0
 #define STATUS_WRITE_IN_PROGRESS	0x1
 #define STATUS_READ_IN_PROGRESS		0x2
+#define STATUS_SUSPENDED		0x4
 
 #define TIMEOUT			20 /* ms */
 

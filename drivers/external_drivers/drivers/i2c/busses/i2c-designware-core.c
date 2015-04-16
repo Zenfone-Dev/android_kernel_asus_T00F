@@ -544,10 +544,13 @@ int i2c_dw_suspend(struct dw_i2c_dev *dev, bool runtime)
 	if (!runtime) {
 		if (down_trylock(&dev->lock))
 			return -EBUSY;
-		dev->status &= ~STATUS_POWERON;
+		dev->status |= STATUS_SUSPENDED;
 	}
 	if (!dev->shared_host)
 		i2c_dw_disable(dev);
+
+	if (!runtime)
+		up(&dev->lock);
 
 	return 0;
 }
@@ -555,10 +558,13 @@ EXPORT_SYMBOL(i2c_dw_suspend);
 
 int i2c_dw_resume(struct dw_i2c_dev *dev, bool runtime)
 {
+	if (!runtime)
+		down(&dev->lock);
+
 	if (!dev->shared_host)
 		i2c_dw_init(dev);
 	if (!runtime) {
-		dev->status |= STATUS_POWERON;
+		dev->status &= ~STATUS_SUSPENDED;
 		up(&dev->lock);
 	}
 
@@ -1311,6 +1317,13 @@ i2c_dw_xfer(struct i2c_adapter *adap, struct i2c_msg msgs[], int num)
 	dev_dbg(dev->dev, "%s: msgs: %d\n", __func__, num);
 
 	down(&dev->lock);
+
+	if (dev->status & STATUS_SUSPENDED) {
+		dev_err(dev->dev, "access i2c after suspend!\n");
+		up(&dev->lock);
+		return -EIO;
+	}
+
 	pm_runtime_get_sync(dev->dev);
 
 	INIT_COMPLETION(dev->cmd_complete);
