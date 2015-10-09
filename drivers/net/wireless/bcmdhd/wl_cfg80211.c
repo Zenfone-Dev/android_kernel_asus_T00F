@@ -9956,6 +9956,8 @@ s32 wl_cfg80211_attach(struct net_device *ndev, void *data)
 		goto cfg80211_attach_out;
 #endif 
 
+	INIT_DELAYED_WORK(&wl->pm_enable_work, wl_cfg80211_work_handler);
+
 	wlcfg_drv_priv = wl;
 
 #if defined(WL_ENABLE_P2P_IF)
@@ -10660,7 +10662,6 @@ static s32 __wl_cfg80211_up(struct wl_priv *wl)
 	wl->scan_supp_timer.function = wl_cfg80211_scan_supp_timerfunc;
 	INIT_WORK(&wl->wlan_work, wl_cfg80211_work_handler);
 #endif /* DHCP_SCAN_SUPPRESS */
-	INIT_DELAYED_WORK(&wl->pm_enable_work, wl_cfg80211_work_handler);
 	wl_set_drv_status(wl, READY, ndev);
 	return err;
 }
