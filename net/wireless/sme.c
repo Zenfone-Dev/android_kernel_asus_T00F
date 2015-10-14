@@ -866,8 +866,10 @@ int __cfg80211_connect(struct cfg80211_registered_device *rdev,
 		} else {
 			wdev->conn->auto_auth = false;
 		}
-
-		memcpy(wdev->ssid, connect->ssid, connect->ssid_len);
+		if (connect->ssid_len <= IEEE80211_MAX_SSID_LEN)
+			memcpy(wdev->ssid, connect->ssid, connect->ssid_len);
+		else
+			return -EINVAL;
 		wdev->ssid_len = connect->ssid_len;
 		wdev->conn->params.ssid = wdev->ssid;
 		wdev->conn->params.ssid_len = connect->ssid_len;
@@ -920,8 +922,10 @@ int __cfg80211_connect(struct cfg80211_registered_device *rdev,
 			wdev->sme_state = CFG80211_SME_IDLE;
 			return err;
 		}
-
-		memcpy(wdev->ssid, connect->ssid, connect->ssid_len);
+		if (connect->ssid_len <= IEEE80211_MAX_SSID_LEN)
+			memcpy(wdev->ssid, connect->ssid, connect->ssid_len);
+		else
+			return -EINVAL;
 		wdev->ssid_len = connect->ssid_len;
 
 		return 0;

@@ -1814,6 +1814,9 @@ static int nl80211_parse_chandef(struct cfg80211_registered_device *rdev,
 	if (!cfg80211_chandef_valid(chandef))
 		return -EINVAL;
 
+	if (chandef->chan->band >= IEEE80211_NUM_BANDS)
+		return -EINVAL;
+
 	if (!cfg80211_chandef_usable(&rdev->wiphy, chandef,
 				     IEEE80211_CHAN_DISABLED))
 		return -EINVAL;
@@ -5221,15 +5224,16 @@ static int nl80211_trigger_scan(struct sk_buff *skb, struct genl_info *info)
 	request->n_channels = i;
 
 	i = 0;
-	if (info->attrs[NL80211_ATTR_SCAN_SSIDS]) {
+	if (request->ssids && info->attrs[NL80211_ATTR_SCAN_SSIDS]) {
 		nla_for_each_nested(attr, info->attrs[NL80211_ATTR_SCAN_SSIDS], tmp) {
-			if (nla_len(attr) > IEEE80211_MAX_SSID_LEN) {
+			if (nla_len(attr) <= IEEE80211_MAX_SSID_LEN) {
+				request->ssids[i].ssid_len = nla_len(attr);
+				memcpy(request->ssids[i].ssid, nla_data(attr), nla_len(attr));
+				i++;
+			} else {
 				err = -EINVAL;
 				goto out_free;
 			}
-			request->ssids[i].ssid_len = nla_len(attr);
-			memcpy(request->ssids[i].ssid, nla_data(attr), nla_len(attr));
-			i++;
 		}
 	}
 
@@ -5458,16 +5462,18 @@ static int nl80211_start_sched_scan(struct sk_buff *skb,
 	request->n_channels = i;
 
 	i = 0;
-	if (info->attrs[NL80211_ATTR_SCAN_SSIDS]) {
+	if (request->ssids && info->attrs[NL80211_ATTR_SCAN_SSIDS]) {
 		nla_for_each_nested(attr, info->attrs[NL80211_ATTR_SCAN_SSIDS],
 				    tmp) {
-			if (nla_len(attr) > IEEE80211_MAX_SSID_LEN) {
+			if (nla_len(attr) <= IEEE80211_MAX_SSID_LEN) {
+					request->ssids[i].ssid_len = nla_len(attr);
+					memcpy(request->ssids[i].ssid, nla_data(attr),
+						nla_len(attr));
+			}
+			else {
 				err = -EINVAL;
 				goto out_free;
 			}
-			request->ssids[i].ssid_len = nla_len(attr);
-			memcpy(request->ssids[i].ssid, nla_data(attr),
-			       nla_len(attr));
 			i++;
 		}
 	}
@@ -5484,14 +5490,16 @@ static int nl80211_start_sched_scan(struct sk_buff *skb,
 				  nl80211_match_policy);
 			ssid = tb[NL80211_SCHED_SCAN_MATCH_ATTR_SSID];
 			if (ssid) {
-				if (nla_len(ssid) > IEEE80211_MAX_SSID_LEN) {
+				if (nla_len(ssid) <= IEEE80211_MAX_SSID_LEN) {
+					memcpy(request->match_sets[i].ssid.ssid,
+					       nla_data(ssid), nla_len(ssid));
+					request->match_sets[i].ssid.ssid_len =
+						nla_len(ssid);
+				}
+				else {
 					err = -EINVAL;
 					goto out_free;
 				}
-				memcpy(request->match_sets[i].ssid.ssid,
-				       nla_data(ssid), nla_len(ssid));
-				request->match_sets[i].ssid.ssid_len =
-					nla_len(ssid);
 			}
 			rssi = tb[NL80211_SCHED_SCAN_MATCH_ATTR_RSSI];
 			if (rssi)
@@ -5505,8 +5513,9 @@ static int nl80211_start_sched_scan(struct sk_buff *skb,
 
 	if (info->attrs[NL80211_ATTR_IE]) {
 		request->ie_len = nla_len(info->attrs[NL80211_ATTR_IE]);
-		memcpy((void *)request->ie,
-		       nla_data(info->attrs[NL80211_ATTR_IE]),
+		if (request->ie)
+			memcpy((void *)request->ie,
+				nla_data(info->attrs[NL80211_ATTR_IE]),
 		       request->ie_len);
 	}
 
@@ -6031,6 +6040,9 @@ static int nl80211_crypto_settings(struct cfg80211_registered_device *rdev,
 		if (settings->n_ciphers_pairwise > cipher_limit)
 			return -EINVAL;
 
+		if (len <= 0 || len > 20)
+			return -EINVAL;
+
 		memcpy(settings->ciphers_pairwise, data, len);
 
 		for (i = 0; i < settings->n_ciphers_pairwise; i++)
@@ -6067,6 +6079,9 @@ static int nl80211_crypto_settings(struct cfg80211_registered_device *rdev,
 			return -EINVAL;
 
 		if (settings->n_akm_suites > NL80211_MAX_NR_AKM_SUITES)
+			return -EINVAL;
+
+		if (len <= 0 || len > 8)
 			return -EINVAL;
 
 		memcpy(settings->akm_suites, data, len);
