@@ -2347,6 +2347,7 @@ static ssize_t intel_scu_ipc_oemnib_write(struct file *file,
 	if (temp == NULL) {
 		pr_err(
 		"Write OEMNIB: Cannot allocate temp buffer for writting OEMNIB\n");
+		kfree(posnib_data);
 		return -ENOMEM;
 	}
 
@@ -2356,13 +2357,14 @@ static ssize_t intel_scu_ipc_oemnib_write(struct file *file,
 		pr_err(
 		"Write OEMNIB: Cannot transfer from user buf to OEMNIB buf\n");
 		kfree(posnib_data);
+		kfree(temp);
 		return -EFAULT;
 	}
 
 	ptrchar = temp;
 	ptr = posnib_data;
 
-	for (i = 0; i <= count - 1; i++) {
+	for (i = 0; i < count - 1; i++) {
 		if (*ptrchar >= '0' && *ptrchar <= '9')
 			*ptr = *ptrchar - '0';
 		if (*ptrchar >= 'A' && *ptrchar <= 'F')
@@ -2379,6 +2381,7 @@ static ssize_t intel_scu_ipc_oemnib_write(struct file *file,
 	if (ret < 0) {
 		pr_err("Write OEMNIB: ipc write of OEMNIB failed!!\n");
 		kfree(posnib_data);
+		kfree(temp);
 		return ret;
 	}
 

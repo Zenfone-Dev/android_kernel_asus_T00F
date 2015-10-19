@@ -671,6 +671,20 @@ static ssize_t write_dnx(struct file *file, struct kobject *kobj,
 		goto end;
 	}
 
+	if (unlikely((off + IFWI_MAX_SIZE) < 0)) {
+		fui.fwud_pending->dnx_file_data = NULL;
+		cur_err("invalid argument below lower bound!");
+		ret = -EINVAL;
+		goto end;
+	}
+
+	if (unlikely((off + IFWI_MAX_SIZE + count) > FOTA_MEM_SIZE)) {
+		fui.fwud_pending->dnx_file_data = NULL;
+		cur_err("invalid argument exceeding upper bound!");
+		ret = -EINVAL;
+		goto end;
+	}
+
 	memcpy(fui.fwud_pending->dnx_file_data + off, buf, count);
 
 	if (!off)
@@ -742,6 +756,20 @@ static ssize_t write_ifwi(struct file *file, struct kobject *kobj,
 		fui.fwud_pending->fw_file_data = NULL;
 		cur_err("too large ifwi binary stream!\n");
 		ret = -EFBIG;
+		goto end;
+	}
+
+	if (unlikely(off < 0)) {
+		fui.fwud_pending->fw_file_data = NULL;
+		cur_err("invalid argument below lower bound!\n");
+		ret = -EINVAL;
+		goto end;
+	}
+
+	if (unlikely((off + count) > FOTA_MEM_SIZE)) {
+		fui.fwud_pending->fw_file_data = NULL;
+		cur_err("invalid argument exceeding upper bound!\n");
+		ret = -EINVAL;
 		goto end;
 	}
 
