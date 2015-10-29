@@ -606,6 +606,8 @@ static int sst_dma_firmware(struct sst_dma *dma, struct sst_sg_list *sg_list)
 
 		/* dma single block mode */
 		for_each_sg(sg_src_list, sg, length, i) {
+			if ((sg == NULL) || (sg_dst_list == NULL))
+				return -EINVAL;
 			pr_debug("dma desc %d, length %d\n", i, sg->length);
 			src_addr = sg_phys(sg);
 			dstn_addr = sg_phys(sg_dst_list);
@@ -618,7 +620,6 @@ static int sst_dma_firmware(struct sst_dma *dma, struct sst_sg_list *sg_list)
 			retval = sst_dma_wait_for_completion(sst_drv_ctx);
 			if (retval)
 				pr_err("sst_dma_firmware..timeout!\n");
-
 		}
 	}
 

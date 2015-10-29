@@ -571,6 +571,8 @@ static int midc_lli_fill_sg(struct intel_mid_dma_chan *midc,
 				ctl_lo.ctl_lo &= ~(1 << CTL_LO_BIT_LLP_SRC_EN);
 			}
 		}
+		if(sg == NULL)
+			return -EINVAL;
 		/*Populate CTL_HI values*/
 		ctl_hi = get_block_ts(sg->length, desc->width,
 					midc->dma->block_size, midc->dma->dword_trf);

@@ -122,8 +122,8 @@ int sst_probe_enum_info(struct snd_kcontrol *kcontrol,
 
 	if (uinfo->value.enumerated.item > e->max - 1)
 		uinfo->value.enumerated.item = e->max - 1;
-	strcpy(uinfo->value.enumerated.name,
-		e->texts[uinfo->value.enumerated.item]);
+	strncpy(uinfo->value.enumerated.name,
+		e->texts[uinfo->value.enumerated.item],sizeof(uinfo->value.enumerated.name));
 	return 0;
 }
 
@@ -401,6 +401,8 @@ static int sst_voice_mode_put(struct snd_kcontrol *kcontrol,
 
 	w = snd_soc_dapm_find_widget(&platform->dapm, sst_voice_widgets[0], true);
 
+	if (w == NULL)
+		return -EINVAL;
 	/* disable and enable the voice path so that the mode change takes effect */
 	if (w->power) {
 		sst_send_speech_path(sst, SST_SWITCH_OFF);
