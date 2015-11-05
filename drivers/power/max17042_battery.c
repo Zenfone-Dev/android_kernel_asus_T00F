@@ -2322,12 +2322,16 @@ static int max17042_probe(struct i2c_client *client,
 		register_reboot_notifier(&max17042_reboot_notifier_block);
 	schedule_work(&chip->evt_worker);
 
+	pm_runtime_enable(&chip->client->dev);
+
 	return 0;
 }
 
 static int max17042_remove(struct i2c_client *client)
 {
 	struct max17042_chip *chip = i2c_get_clientdata(client);
+
+	pm_runtime_disable(&chip->client->dev);
 
 	if (chip->pdata->file_sys_storage_enabled)
 		misc_deregister(&fg_helper);
