@@ -37,7 +37,7 @@ struct rpmsg_ns_info *rpmsg_ns_alloc(const char *name, int id, u32 addr)
 
 	ns_info = kzalloc(sizeof(struct rpmsg_ns_info), GFP_KERNEL);
 	if (ns_info) {
-		strcpy(ns_info->name, name);
+		strncpy(ns_info->name, name, RPMSG_NAME_SIZE);
 		ns_info->type = id;
 		ns_info->addr = addr;
 		ns_info->flags = RPMSG_NS_CREATE;
