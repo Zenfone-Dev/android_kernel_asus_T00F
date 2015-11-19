@@ -1410,6 +1410,8 @@ static int dump_output_show_i2c(struct seq_file *s)
 		return 0;
 	}
 
+	msg.flags = 0;
+
 	if (access_dir == ACCESS_DIR_WRITE) {
 		msg.addr = i2c_addr;
 		msg.len = 1;
