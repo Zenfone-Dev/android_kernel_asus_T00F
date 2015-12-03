@@ -184,8 +184,8 @@ int sst_slot_enum_info(struct snd_kcontrol *kcontrol,
 
 	if (uinfo->value.enumerated.item > e->max - 1)
 		uinfo->value.enumerated.item = e->max - 1;
-	strcpy(uinfo->value.enumerated.name,
-		e->texts[uinfo->value.enumerated.item]);
+	strncpy(uinfo->value.enumerated.name,
+		e->texts[uinfo->value.enumerated.item],sizeof(uinfo->value.enumerated.name));
 	return 0;
 }
 
@@ -411,7 +411,8 @@ static int sst_voice_mode_put(struct snd_kcontrol *kcontrol,
 		sst_send_pipe_module_params(w);
 		for (i = 1; i < ARRAY_SIZE(sst_voice_widgets); i++) {
 			w = snd_soc_dapm_find_widget(&platform->dapm, sst_voice_widgets[i], true);
-			sst_send_pipe_module_params(w);
+			if (w != NULL)
+				sst_send_pipe_module_params(w);
 		}
 	}
 	return 0;
