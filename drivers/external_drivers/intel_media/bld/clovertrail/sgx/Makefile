@@ -96,4 +96,4 @@ $(DRIVER_NAME)-objs +=  \
 	$(SGXDIR)/mmu.o \
 	$(SGXDIR)/pb.o
 
-obj-m += $(DRIVER_NAME).o
+obj-$(CONFIG_DRM_CTP) += $(DRIVER_NAME).o
