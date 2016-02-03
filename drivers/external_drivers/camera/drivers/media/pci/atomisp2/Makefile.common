@@ -211,7 +211,21 @@ endif
 
 endif
 
-obj-$(CONFIG_VIDEO_ATOMISP) = atomisp-$(postfix).o
+ifdef ISP2300
+obj-$(CONFIG_VIDEO_ATOMISP_CSS2300) = atomisp-$(postfix).o
+endif
+
+ifdef ISP2400B0
+obj-$(CONFIG_VIDEO_ATOMISP_CSS2400_V21) = atomisp-$(postfix).o
+endif
+
+ifdef ISP2401
+obj-$(CONFIG_VIDEO_ATOMISP_CSS2401_LEGACY_V21) = atomisp-$(postfix).o
+endif
+
+ifdef ISP2401_NEW_INPUT_SYSTEM
+obj-$(CONFIG_VIDEO_ATOMISP_CSS2401_V21) = atomisp-$(postfix).o
+endif
 
 # Includes for atomisp2 driver, all CSS versions
 INCLUDES := -I$(srctree)/$(src)/atomisp_driver/include \
