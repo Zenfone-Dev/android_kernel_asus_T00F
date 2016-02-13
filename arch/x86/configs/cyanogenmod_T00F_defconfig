@@ -1302,8 +1302,8 @@ CONFIG_WIFI_PLATFORM_DATA=y
 # CONFIG_B43LEGACY is not set
 # CONFIG_BRCMFMAC is not set
 CONFIG_BCMDHD=y
-CONFIG_BCMDHD_FW_PATH="/system/etc/firmware/fw_bcmdhd.bin"
-CONFIG_BCMDHD_NVRAM_PATH="/system/etc/wifi/bcmdhd.cal"
+CONFIG_BCMDHD_FW_PATH="/system/etc/firmware/fw_bcmdhd_43362.bin"
+CONFIG_BCMDHD_NVRAM_PATH="/system/etc/wifi/bcmdhd_a500cg.cal"
 # CONFIG_DHD_USE_STATIC_BUF is not set
 # CONFIG_DHD_USE_SCHED_SCAN is not set
 # CONFIG_HOSTAP is not set
