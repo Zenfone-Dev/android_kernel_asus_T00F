@@ -955,14 +955,14 @@ static const struct dev_pm_ops lm3554_pm_ops = {
 	.suspend = lm3554_suspend,
 	.resume = lm3554_resume,
 };
-
+#if 0
 static struct acpi_device_id lm3554_acpi_match[] = {
 	{ "INTCF1C" },
 	{},
 };
 
 MODULE_DEVICE_TABLE(acpi, lm3554_acpi_match);
-
+#endif
 static struct i2c_driver lm3554_driver = {
 	.driver = {
 		.owner = THIS_MODULE,
