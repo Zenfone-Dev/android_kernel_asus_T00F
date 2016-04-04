@@ -339,7 +339,6 @@ static void pdp_mode_to_drm_mode(struct adf_pdp_device *pdp, int mode_id,
 {
 	const struct pdp_timing_data *pdp_mode = pdp_timing_data(pdp, mode_id);
 
-	BUG_ON(pdp_mode == NULL);
 	memset(drm_mode, 0, sizeof(*drm_mode));
 
 	drm_mode->hdisplay = pdp_mode->h_display;

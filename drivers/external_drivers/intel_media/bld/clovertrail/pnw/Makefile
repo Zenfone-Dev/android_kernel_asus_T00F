@@ -86,6 +86,8 @@ $(DRIVER_NAME)-objs += $(FBDEVDIR)/drmlfb_displayclass.o \
 
 ifeq ($(CONFIG_SUPPORT_OTM8018B_MIPI_480X854_DISPLAY), y)
 $(DRIVER_NAME)-objs += $(DISPLAYDIR)/mdfld_dsi_dpi_pf450.o
+else ifeq ($(CONFIG_A500CG), y)
+$(DRIVER_NAME)-objs += $(DISPLAYDIR)/mdfld_dsi_dpi.a500cg.o
 else
 $(DRIVER_NAME)-objs += $(DISPLAYDIR)/mdfld_dsi_dpi.o
 endif
@@ -107,10 +109,13 @@ $(DRIVER_NAME)-objs += $(ENCODE_DIR)/pnw_topaz.o \
 	$(VIDEO_COMMON_DIR)/psb_ttm_placement_user.o
 endif
 
-ifeq ($(CONFIG_SUPPORT_HDMI), y)
+ifneq ($(CONFIG_SUPPORT_HDMI) & $(CONFIG_CTP_DPST),n)
 $(DRIVER_NAME)-objs += $(DISPLAYDIR)/psb_umevents.o \
-	$(DISPLAYDIR)/psb_socket.o \
-	$(OTM_HDMI_SRC)/pil/common/otm_hdmi.o \
+       	$(DISPLAYDIR)/psb_socket.o
+endif
+
+ifeq ($(CONFIG_SUPPORT_HDMI), y)
+$(DRIVER_NAME)-objs += $(OTM_HDMI_SRC)/pil/common/otm_hdmi.o \
 	$(OTM_HDMI_SRC)/pil/common/mode_info.o \
 	$(OTM_HDMI_SRC)/pil/common/hdcp.o \
 	$(OTM_HDMI_SRC)/pil/common/edid.o \
@@ -144,6 +149,14 @@ endif
 
 ifeq ($(CONFIG_SUPPORT_MIPI_H8C7_CMD_DISPLAY), y)
 $(DRIVER_NAME)-objs += $(DISPLAYDIR)/h8c7_cmd.o
+endif
+
+ifeq ($(CONFIG_SUPPORT_MIPI_HX8394_DISPLAY), y)
+$(DRIVER_NAME)-objs += $(DISPLAYDIR)/hx8394_vid.o
+endif
+
+ifeq ($(CONFIG_SUPPORT_MIPI_ORISE1283A_DISPLAY), y)
+$(DRIVER_NAME)-objs += $(DISPLAYDIR)/orise1283a_vid.o
 endif
 
 ifeq ($(CONFIG_SUPPORT_VB_MIPI_DISPLAY), y)

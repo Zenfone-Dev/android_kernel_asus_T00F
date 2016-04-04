@@ -176,12 +176,8 @@ static void psb_fence_lockup(struct ttm_fence_object *fence,
 		if (psb_get_power_state(OSPM_VIDEO_DEC_ISLAND) == 0)
 			PSB_DEBUG_WARN("WARN: msvdx is power off in accident.\n");
 #endif
-
-#if defined(MERRIFIELD)
-		/* It's safe to check VED reg here on TNG/ANN as the bus can handle case of "VED power down" */
 		PSB_DEBUG_WARN("WARN: MSVDX_COMMS_FW_STATUS reg is 0x%x.\n",
 				PSB_RMSVDX32(MSVDX_COMMS_FW_STATUS));
-#endif
 		psb_msvdx_flush_cmd_queue(dev);
 
 		write_lock(&fc->lock);

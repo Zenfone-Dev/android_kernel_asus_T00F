@@ -1341,6 +1341,14 @@ static int hsi_ctrl_suspend(struct intel_controller *intel_hsi, int rtpm)
 		goto exit_ctrl_suspend;
 	}
 
+        if(timer_pending(&intel_hsi->tx_idle_poll)) {
+                err = -EBUSY;
+                pr_info(DRVNAME ": Prevent suspend (Pending timer tx_idle_poll, RX state: %d, TX state: %d)\n",
+                               intel_hsi->rx_state,
+                               intel_hsi->tx_state);
+                goto exit_ctrl_suspend;
+        }
+
 	/* Disable all DMA */
 	if (is_arasan_v1(version)) {
 		hsi_iowrite32(intel_hsi, DWAHB_CHAN_DISABLE(DWAHB_ALL_CHANNELS),

@@ -79,18 +79,6 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
    the host and meta that contains 64-bit vars has to maintain this aligment)*/
 #define RGXFWIF_FWALLOC_ALIGN	sizeof(IMG_UINT64)
 
-/*!
- ******************************************************************************
- * Force structure 8-byte alignment
- * This option was introduced to fix the ARM64 misalignment issue when accessing
- * uncached memory.
- *****************************************************************************/
-#if defined(FORCE_UNCACHED_ALIGN)
-#define UNCACHED_ALIGN      RGXFW_ALIGN
-#else
-#define UNCACHED_ALIGN
-#endif
-
 typedef struct _RGXFWIF_DEV_VIRTADDR_
 {
 	IMG_UINT32	ui32Addr;
@@ -339,7 +327,7 @@ typedef struct _RGXFWIF_COMPCHECKS_BVNC_
 	IMG_UINT32  ui32VLenMax;
 	IMG_UINT32	ui32BNC;
 	IMG_CHAR	aszV[RGXFWIF_COMPCHECKS_BVNC_V_LEN_MAX + 1];
-} UNCACHED_ALIGN RGXFWIF_COMPCHECKS_BVNC;
+} RGXFWIF_COMPCHECKS_BVNC;
 
 #define RGXFWIF_COMPCHECKS_BVNC_DECLARE_AND_INIT(name) RGXFWIF_COMPCHECKS_BVNC name = { RGXFWIF_COMPCHECKS_LAYOUT_VERSION, RGXFWIF_COMPCHECKS_BVNC_V_LEN_MAX }
 #define RGXFWIF_COMPCHECKS_BVNC_INIT(name) do { (name).ui32LayoutVersion = RGXFWIF_COMPCHECKS_LAYOUT_VERSION; \
@@ -354,7 +342,7 @@ typedef struct _RGXFWIF_COMPCHECKS_
 	IMG_UINT32					ui32DDKBuild;		/*!< software DDK build no. */
 	IMG_UINT32					ui32BuildOptions;	/*!< build options bit-field */
 	IMG_BOOL					bUpdated;			/*!< Information is valid */
-} UNCACHED_ALIGN RGXFWIF_COMPCHECKS;
+} RGXFWIF_COMPCHECKS;
 
 
 #define GET_CCB_SPACE(WOff, ROff, CCBSize) \

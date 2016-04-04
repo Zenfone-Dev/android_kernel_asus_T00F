@@ -652,6 +652,34 @@ static void dlp_net_hsi_tx_timeout_cb(struct dlp_channel *ch_ctx)
 	netif_tx_disable(net_ctx->ndev);
 }
 
+/**
+ * dlp_net_tx_fifo_wait_recycle - recycle the whole content of the TX waiting FIFO
+ * @xfer_ctx: a reference to the TX context to consider
+ *
+ * This helper function is emptying a waiting TX FIFO and recycling all its
+ * pdus.
+ */
+static void dlp_net_tx_fifo_wait_recycle(struct dlp_xfer_ctx *xfer_ctx)
+{
+	struct hsi_msg *pdu;
+	unsigned long flags;
+
+	write_lock_irqsave(&xfer_ctx->lock, flags);
+
+	while ((pdu = dlp_fifo_wait_pop(xfer_ctx))) {
+		pdu->status = HSI_STATUS_COMPLETED;
+		pdu->actual_len = 0;
+		pdu->break_frame = 0;
+
+		xfer_ctx->room += dlp_pdu_room_in(pdu);
+
+		/* Recycle the pdu */
+		dlp_fifo_recycled_push(xfer_ctx, pdu);
+	}
+
+	write_unlock_irqrestore(&xfer_ctx->lock, flags);
+}
+
 /*
  *
  * NETWORK INTERFACE functions
@@ -724,6 +752,7 @@ int dlp_net_stop(struct net_device *dev)
 	/* TX */
 	del_timer_sync(&tx_ctx->timer);
 	dlp_stop_tx(tx_ctx);
+	dlp_net_tx_fifo_wait_recycle(tx_ctx);
 
 	ret = dlp_ctrl_close_channel(ch_ctx);
 	if (ret)

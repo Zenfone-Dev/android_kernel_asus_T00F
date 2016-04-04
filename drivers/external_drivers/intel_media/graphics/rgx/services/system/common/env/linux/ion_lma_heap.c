@@ -1,5 +1,5 @@
 /*************************************************************************/ /*!
-@File           lma_heap_ion.c
+@File           ion_lma_heap.c
 @Title          Ion heap for local memory
 @Copyright      Copyright (c) Imagination Technologies Ltd. All Rights Reserved
 @License        Dual MIT/GPLv2
@@ -46,7 +46,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <linux/scatterlist.h>
 #include PVR_ANDROID_ION_PRIV_HEADER
 
-#include "lma_heap_ion.h"
+#include "ion_lma_heap.h"
 #include "pvr_debug.h"
 
 struct lma_heap
@@ -124,7 +124,6 @@ static void lma_heap_unmap_dma(struct ion_heap *heap,
 							   struct ion_buffer *buffer)
 {
 	sg_free_table(buffer->sg_table);
-	kfree(buffer->sg_table);
 }
 
 static void *lma_heap_map_kernel(struct ion_heap *heap,

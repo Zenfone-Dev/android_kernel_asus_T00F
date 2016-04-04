@@ -45,10 +45,6 @@ struct atomisp_css_frame;
 #define INTR_IER		24
 #define INTR_IIR		16
 
-#ifdef CONFIG_GMIN_INTEL_MID
-extern int atomisp_punit_hpll_freq;
-#endif
-
 /*
  * Helper function
  */
@@ -398,9 +394,4 @@ int atomisp_inject_a_fake_event(struct atomisp_sub_device *asd, int *event);
  */
 int atomisp_get_invalid_frame_num(struct video_device *vdev,
 			int *invalid_frame_num);
-
-int atomisp_mrfld_power_up(struct atomisp_device *isp);
-int atomisp_mrfld_power_down(struct atomisp_device *isp);
-int atomisp_runtime_suspend(struct device *dev);
-int atomisp_runtime_resume(struct device *dev);
 #endif /* __ATOMISP_CMD_H__ */

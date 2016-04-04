@@ -108,8 +108,7 @@ CopyToUserWrapper(CONNECTION_DATA *psConnection,
 #endif
 
 PVRSRV_ERROR
-PVRSRVConnectKM(CONNECTION_DATA *psConnection,
-				IMG_UINT32 ui32Flags,
+PVRSRVConnectKM(IMG_UINT32 ui32Flags,
 				IMG_UINT32 ui32ClientBuildOptions,
 				IMG_UINT32 ui32ClientDDKVersion,
 				IMG_UINT32 ui32ClientDDKBuild,
@@ -123,49 +122,7 @@ PVRSRVConnectKM(CONNECTION_DATA *psConnection,
 	*ui32Log2PageSize = GET_LOG2_PAGESIZE();
 
 	PVR_UNREFERENCED_PARAMETER(ui32Flags);
-	if(ui32Flags & SRV_FLAGS_INIT_PROCESS)
-	{
-		PVR_DPF((PVR_DBG_MESSAGE, "%s: Connecting as init process", __func__));
-		if ((OSProcHasPrivSrvInit() == IMG_FALSE) || PVRSRVGetInitServerState(PVRSRV_INIT_SERVER_RUNNING) || PVRSRVGetInitServerState(PVRSRV_INIT_SERVER_RAN))
-		{
-			PVR_DPF((PVR_DBG_ERROR, "%s: Rejecting init process", __func__));
-			eError = PVRSRV_ERROR_SRV_CONNECT_FAILED;
-			goto chk_exit;
-		}
-#if defined (__linux__)
-		PVRSRVSetInitServerState(PVRSRV_INIT_SERVER_RUNNING, IMG_TRUE);
-#endif
-	}
-	else
-	{
-		if(PVRSRVGetInitServerState(PVRSRV_INIT_SERVER_RAN))
-		{
-			if (!PVRSRVGetInitServerState(PVRSRV_INIT_SERVER_SUCCESSFUL))
-			{
-				PVR_DPF((PVR_DBG_ERROR, "%s: Initialisation failed.  Driver unusable.",
-					__FUNCTION__));
-				eError = PVRSRV_ERROR_INIT_FAILURE;
-				goto chk_exit;
-			}
-		}
-		else
-		{
-			if(PVRSRVGetInitServerState(PVRSRV_INIT_SERVER_RUNNING))
-			{
-				PVR_DPF((PVR_DBG_ERROR, "%s: Initialisation is in progress",
-						 __FUNCTION__));
-				eError = PVRSRV_ERROR_RETRY;
-				goto chk_exit;
-			}
-			else
-			{
-				PVR_DPF((PVR_DBG_ERROR, "%s: Driver initialisation not completed yet.",
-						 __FUNCTION__));
-				eError = PVRSRV_ERROR_RETRY;
-				goto chk_exit;
-			}
-		}
-	}
+
 	ui32ClientBuildOptions &= RGX_BUILD_OPTIONS_MASK_KM;
 	/*
 	 * Validate the build options
@@ -254,12 +211,7 @@ PVRSRVConnectKM(CONNECTION_DATA *psConnection,
 		*pui8KernelArch = 32;
 	}
 
-	if (ui32Flags & SRV_FLAGS_INIT_PROCESS)
-	{
-		psConnection->bInitProcess = IMG_TRUE;
-	}
-
-chk_exit:
+chk_exit:	
 	return eError;
 }
 
@@ -479,6 +431,24 @@ _SetDispatchTableEntry(IMG_UINT32 ui32Index,
 }
 
 PVRSRV_ERROR
+PVRSRVInitSrvConnectKM(CONNECTION_DATA *psConnection)
+{
+	/* PRQA S 3415 1 */ /* side effects needed - if any step fails */
+	if((OSProcHasPrivSrvInit() == IMG_FALSE) || PVRSRVGetInitServerState(PVRSRV_INIT_SERVER_RUNNING) || PVRSRVGetInitServerState(PVRSRV_INIT_SERVER_RAN))
+	{
+		return PVRSRV_ERROR_SRV_CONNECT_FAILED;
+	}
+
+#if defined (__linux__)
+	PVRSRVSetInitServerState(PVRSRV_INIT_SERVER_RUNNING, IMG_TRUE);
+#endif
+	psConnection->bInitProcess = IMG_TRUE;
+
+	return PVRSRV_OK;
+}
+
+
+PVRSRV_ERROR
 PVRSRVInitSrvDisconnectKM(CONNECTION_DATA *psConnection,
 							IMG_BOOL bInitSuccesful,
 							IMG_UINT32 ui32ClientBuildOptions)
@@ -524,6 +494,54 @@ IMG_INT BridgedDispatchKM(CONNECTION_DATA * psConnection,
 	g_BridgeDispatchTable[ui32BridgeID].ui32CallCount++;
 	g_BridgeGlobalStats.ui32IOCTLCount++;
 #endif
+
+	if(!psConnection->bInitProcess)
+	{
+		if(PVRSRVGetInitServerState(PVRSRV_INIT_SERVER_RAN))
+		{
+			if (ui32BridgeID == PVRSRV_GET_BRIDGE_ID(PVRSRV_BRIDGE_SRVCORE_RELEASEGLOBALEVENTOBJECT))
+			{
+				PVR_DPF((PVR_DBG_MESSAGE, "%s: Allowing release call through.",
+						 __FUNCTION__));
+			}
+			else if (!PVRSRVGetInitServerState(PVRSRV_INIT_SERVER_SUCCESSFUL))
+			{
+				PVR_DPF((PVR_DBG_ERROR, "%s: Initialisation failed.  Driver unusable.",
+						 __FUNCTION__));
+				goto return_fault;
+			}
+		}
+		else
+		{
+			if(PVRSRVGetInitServerState(PVRSRV_INIT_SERVER_RUNNING))
+			{
+				PVR_DPF((PVR_DBG_ERROR, "%s: Initialisation is in progress",
+						 __FUNCTION__));
+				goto return_fault;
+			}
+			else
+			{
+				/* Only certain operations are allowed */
+				switch(ui32BridgeID)
+				{
+					
+					case PVRSRV_GET_BRIDGE_ID(PVRSRV_BRIDGE_SRVCORE_CONNECT):
+					case PVRSRV_GET_BRIDGE_ID(PVRSRV_BRIDGE_SRVCORE_DISCONNECT):
+					case PVRSRV_GET_BRIDGE_ID(PVRSRV_BRIDGE_SRVCORE_ACQUIREGLOBALEVENTOBJECT):
+					case PVRSRV_GET_BRIDGE_ID(PVRSRV_BRIDGE_SRVCORE_RELEASEGLOBALEVENTOBJECT):
+					case PVRSRV_GET_BRIDGE_ID(PVRSRV_BRIDGE_SRVCORE_INITSRVCONNECT):
+					case PVRSRV_GET_BRIDGE_ID(PVRSRV_BRIDGE_SRVCORE_INITSRVDISCONNECT):
+						break;
+					default:
+						PVR_DPF((PVR_DBG_ERROR, "%s: Driver initialisation not completed yet.",
+								 __FUNCTION__));
+						goto return_fault;
+				}
+			}
+		}
+	}
+
+
 
 #if defined(__linux__)
 	{

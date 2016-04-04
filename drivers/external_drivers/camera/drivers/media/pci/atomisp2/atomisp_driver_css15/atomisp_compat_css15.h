@@ -43,6 +43,7 @@
 #define atomisp_css_wb_config	sh_css_wb_config
 #define atomisp_css_cc_config	sh_css_cc_config
 #define atomisp_css_nr_config	sh_css_nr_config
+#define atomisp_css_ext_nr_config      sh_css_ext_nr_config
 #define atomisp_css_ee_config	sh_css_ee_config
 #define atomisp_css_ob_config	sh_css_ob_config
 #define atomisp_css_de_config	sh_css_de_config
@@ -50,6 +51,7 @@
 #define atomisp_css_gc_config	sh_css_gc_config
 #define atomisp_css_tnr_config	sh_css_tnr_config
 #define atomisp_css_3a_config	sh_css_3a_config
+#define atomisp_css_anr_config  sh_css_anr_config
 #define atomisp_css_gamma_table	sh_css_gamma_table
 #define atomisp_css_ctc_table	sh_css_ctc_table
 #define atomisp_css_macc_table	sh_css_macc_table
@@ -57,6 +59,7 @@
 #define atomisp_css_shading_table	sh_css_shading_table
 #define atomisp_css_morph_table	sh_css_morph_table
 #define atomisp_css_fw_info	sh_css_fw_info
+typedef union sh_css_s3a_data atomisp_css_3a_data;
 
 #define CSS_PIPE_ID_PREVIEW	SH_CSS_PREVIEW_PIPELINE
 #define CSS_PIPE_ID_COPY	SH_CSS_COPY_PIPELINE
@@ -109,7 +112,7 @@ struct atomisp_css_env {
 };
 
 struct atomisp_s3a_buf {
-	union sh_css_s3a_data s3a_data;
+	atomisp_css_3a_data s3a_data;
 	struct list_head list;
 };
 
@@ -121,7 +124,7 @@ struct atomisp_dis_buf {
 struct atomisp_css_buffer {
 	struct sh_css_buffer css_buffer;
 	struct atomisp_css_dis_data *dis_data;
-	union sh_css_s3a_data *s3a_data;
+	atomisp_css_3a_data *s3a_data;
 };
 
 struct atomisp_css_event_type {

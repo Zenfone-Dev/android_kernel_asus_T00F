@@ -104,6 +104,7 @@
 
 #define MRFLD_MAX_ZOOM_FACTOR	1024
 
+#ifdef CONFIG_GMIN_INTEL_MID
 /* MRFLD ISP POWER related */
 #define MRFLD_ISPSSPM0         0x39
 #define MRFLD_ISPSSPM0_ISPSSC_OFFSET   0
@@ -111,9 +112,7 @@
 #define MRFLD_ISPSSPM0_ISPSSC_MASK     0x3
 #define MRFLD_ISPSSPM0_IUNIT_POWER_ON  0
 #define MRFLD_ISPSSPM0_IUNIT_POWER_OFF 0x3
-#define MRFLD_ISPSSDVFS			0x13F
-#define MRFLD_BIT0			0x0001
-#define MRFLD_BIT1			0x0002
+#endif
 
 /* MRFLD CSI lane configuration related */
 #define MRFLD_PORT_CONFIG_NUM  8
@@ -148,7 +147,7 @@
 #define ISP_FREQ_266MHZ				0x10a
 #define ISP_FREQ_200MHZ				0xc8
 #define HPLL_FREQ				0x640
-#define HPLL_FREQ_CR				0x7D0
+#define HPLL_FREQ_CR        			0x7D0
 
 #if defined(ISP2401)
 #define ISP_FREQ_MAX	ISP_FREQ_320MHZ

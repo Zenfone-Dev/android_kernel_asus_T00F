@@ -517,9 +517,11 @@ static void mdfld_adjust_display_fifo(struct drm_device *dev)
 	if (IS_CTP(dev)) {
 		/* Set proper high priority configuration to avoid overlay
 		 * block memory self-refresh entry */
+#ifndef CONFIG_A500CG
 		temp = REG_READ(G_HP_CONTROL);
 		REG_WRITE(G_HP_CONTROL,
 			HP_REQUESTORS_STATUS_OVERRIDE_MODE | temp);
+#endif
 		if (mode &&
 		    ((mode->hdisplay >= 1920 && mode->vdisplay >= 1080) ||
 		     (mode->hdisplay >= 1080 && mode->vdisplay >= 1920))) {
@@ -540,10 +542,18 @@ static void mdfld_adjust_display_fifo(struct drm_device *dev)
 				REG_WRITE(DSPFW4, 0x07071010);
 			}
 		} else {
+#ifdef CONFIG_A500CG
+				/* setting for panel bigger than 1080p */
+				REG_WRITE(DSPARB, 0x0005F8D4);
+				REG_WRITE(DSPFW1, 0x0F0F1010);
+				REG_WRITE(DSPFW2, 0x5F2F0F0F);
+				REG_WRITE(DSPFW4, 0x07071010);
+#else
 			/* setting for panel smaller than 1080p, f.e 720p */
 			REG_WRITE(DSPARB, 0x0005E480);
 			REG_WRITE(DSPFW1, 0x0F0F103F);
 			REG_WRITE(DSPFW4, 0x0707101F);
+#endif
 		}
 
 		REG_WRITE(MI_ARB, 0x0);

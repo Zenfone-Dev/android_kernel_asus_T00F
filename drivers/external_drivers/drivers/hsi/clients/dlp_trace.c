@@ -344,7 +344,7 @@ static int dlp_trace_dev_open(struct inode *inode, struct file *filp)
 		goto err;
 	}
 
-	if (dlp_drv.sys_info->mdm_ver == MODEM_7160) {
+	if ((dlp_drv.sys_info->mdm_ver == MODEM_7160) || (dlp_drv.sys_info->mdm_ver == MODEM_6360)) {
 		ret = dlp_ctrl_open_channel(ch_ctx);
 		if (ret) {
 			pr_err(DRVNAME ": open channel(ch%d) failed :%d)\n",

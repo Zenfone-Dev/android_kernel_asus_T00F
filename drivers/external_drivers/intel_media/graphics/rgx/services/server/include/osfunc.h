@@ -53,14 +53,10 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 extern "C" {
 #endif
 
-#if defined(KERNEL) && defined(ANDROID)
-#define __pvrsrv_defined_struct_enum__
-#include <services_kernel_client.h>
-#endif
-
 #include "img_types.h"
 #include "pvrsrv_device.h"
 #include "device.h"
+
 
 /******************************************************************************
  * Static defines

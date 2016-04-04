@@ -170,7 +170,7 @@ PVRSRV_ERROR RGXDustCountChange(IMG_HANDLE				hDevHandle,
 ******************************************************************************/
 PVRSRV_ERROR RGXAPMLatencyChange(IMG_HANDLE				hDevHandle,
 				IMG_UINT32				ui32ActivePMLatencyms,
-				IMG_BOOL				bActivePMLatencyPersistant);
+				IMG_BOOL				bPersistent);
 
 /*!
 ******************************************************************************

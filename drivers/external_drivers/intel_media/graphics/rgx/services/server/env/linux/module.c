@@ -784,7 +784,7 @@ CONNECTION_DATA *LinuxConnectionFromFile(struct file *pFile)
 {
 	PVRSRV_FILE_PRIVATE_DATA *psPrivateData = PRIVATE_DATA(pFile);
 
-	return (psPrivateData == IMG_NULL) ? IMG_NULL : psPrivateData->pvConnectionData;
+	return psPrivateData->pvConnectionData;
 }
 
 struct file *LinuxFileFromEnvConnection(ENV_CONNECTION_DATA *psEnvConnection)
@@ -1056,7 +1056,7 @@ static int __init PVRCore_Init(void)
 #endif /* !defined(SUPPORT_DRM) */
 
 #if defined(PVR_ANDROID_NATIVE_WINDOW_HAS_SYNC)
-	eError = pvr_sync_init();
+	eError = PVRFDSyncDeviceInitKM();
 	if (eError != PVRSRV_OK)
 	{
 		PVR_DPF((PVR_DBG_ERROR, "PVRCore_Init: unable to create sync (%d)", eError));
@@ -1175,7 +1175,7 @@ static void __exit PVRCore_Cleanup(void)
 #endif
 
 #if defined(PVR_ANDROID_NATIVE_WINDOW_HAS_SYNC)
-	pvr_sync_deinit();
+	PVRFDSyncDeviceDeInitKM();
 #endif
 
 #if !defined(SUPPORT_DRM)

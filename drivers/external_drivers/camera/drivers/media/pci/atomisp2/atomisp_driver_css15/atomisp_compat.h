@@ -63,6 +63,8 @@
 	CSS_ID(CSS_RX_IRQ_INFO_ERR_LINE_SYNC)
 #define CSS_RX_IRQ_INFO_INIT_TIMEOUT \
 	CSS_ID(CSS_RX_IRQ_INFO_INIT_TIMEOUT)
+#define CSS_RX_IRQ_INFO_ERR_ECC_NO_ERR \
+       CSS_ID(CSS_RX_IRQ_INFO_ERR_ECC_NO_ERR)
 
 #define CSS_IRQ_INFO_CSS_RECEIVER_SOF	CSS_ID(CSS_IRQ_INFO_CSS_RECEIVER_SOF)
 #define CSS_IRQ_INFO_CSS_RECEIVER_EOF	CSS_ID(CSS_IRQ_INFO_CSS_RECEIVER_EOF)
@@ -145,6 +147,8 @@ int atomisp_css_irq_translate(struct atomisp_device *isp,
 void atomisp_css_rx_get_irq_info(unsigned int *infos);
 
 void atomisp_css_rx_clear_irq_info(unsigned int infos);
+
+void atomisp_css_rx_clear_irq_status(unsigned int infos);
 
 int atomisp_css_irq_enable(struct atomisp_device *isp,
 			   enum atomisp_css_irq_info info, bool enable);
@@ -422,6 +426,11 @@ void atomisp_css_set_ce_config(struct atomisp_sub_device *asd,
 void atomisp_css_set_nr_config(struct atomisp_sub_device *asd,
 			struct atomisp_css_nr_config *nr_config);
 
+#ifndef CONFIG_VIDEO_ATOMISP_CSS20
+void atomisp_css_set_ext_nr_config(struct atomisp_sub_device *asd,
+                        struct atomisp_css_ext_nr_config *ext_nr_config);
+#endif
+
 void atomisp_css_set_ee_config(struct atomisp_sub_device *asd,
 			struct atomisp_css_ee_config *ee_config);
 
@@ -442,6 +451,9 @@ void atomisp_css_set_ctc_table(struct atomisp_sub_device *asd,
 
 void atomisp_css_set_gc_config(struct atomisp_sub_device *asd,
 			struct atomisp_css_gc_config *gc_config);
+
+void atomisp_css_set_anr_config(struct atomisp_sub_device *asd,
+                        struct atomisp_css_anr_config *anr_config);
 
 void atomisp_css_set_3a_config(struct atomisp_sub_device *asd,
 			struct atomisp_css_3a_config *s3a_config);

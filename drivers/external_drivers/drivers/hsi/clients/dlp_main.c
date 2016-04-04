@@ -1672,6 +1672,7 @@ void dlp_xfer_ctx_init(struct dlp_channel *ch_ctx,
 	init_completion(&xfer_ctx->cmd_xfer_done);
 	init_timer(&xfer_ctx->timer);
 	rwlock_init(&xfer_ctx->lock);
+	mutex_init(&xfer_ctx->cmd_sync);
 
 	xfer_ctx->pdu_size = pdu_size;
 	xfer_ctx->timer.data = (unsigned long)xfer_ctx;

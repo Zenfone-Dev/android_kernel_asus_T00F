@@ -61,7 +61,7 @@ struct hmm_bo_device {
 	struct list_head	active_bo_list;
 
 	/* list lock is used to protect both of the buffer object lists */
-	spinlock_t		list_lock;
+	struct spinlock		list_lock;
 #ifdef CONFIG_ION
 	struct ion_client	*iclient;
 #endif

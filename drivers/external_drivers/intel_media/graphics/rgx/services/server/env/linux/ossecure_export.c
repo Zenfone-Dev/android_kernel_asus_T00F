@@ -70,7 +70,6 @@ PVRSRV_ERROR OSSecureExport(CONNECTION_DATA *psConnection,
 	struct dentry *secure_dentry;
 	struct vfsmount *secure_mnt;
 	int secure_fd;
-	IMG_BOOL bPmrUnlocked = IMG_FALSE;
 	PVRSRV_ERROR eError;
 
 	/* Obtain the current connections struct file */
@@ -97,16 +96,7 @@ PVRSRV_ERROR OSSecureExport(CONNECTION_DATA *psConnection,
 	secure_mnt = mntget(connection_file->f_vfsmnt);
 #endif
 
-	/* PMR lock needs to be released before bridge lock to keep lock hierarchy
-	* and avoid deadlock situation.
-	* OSSecureExport() can be called from functions that are not acquiring
-	* PMR lock (e.g. by PVRSRVSyncPrimServerSecureExportKM()) so we have to
-	* check if PMR lock is locked. */
-	if (PMRIsLockedByMe())
-	{
-		PMRUnlock();
-		bPmrUnlocked = IMG_TRUE;
-	}
+	
 	OSReleaseBridgeLock();
 
 	/* Open our device (using the file information from our current connection) */
@@ -121,8 +111,6 @@ PVRSRV_ERROR OSSecureExport(CONNECTION_DATA *psConnection,
 					  current_cred());
 
 	OSAcquireBridgeLock();
-	if (bPmrUnlocked)
-		PMRLock();
 
 	/* Bail if the open failed */
 	if (IS_ERR(secure_file))

@@ -140,8 +140,7 @@ static IMG_UINT32 g_aui32DebugOrderTable[] = {
 	DEBUG_REQUEST_SYS,
 	DEBUG_REQUEST_RGX,
 	DEBUG_REQUEST_DC,
-	DEBUG_REQUEST_SERVERSYNC,
-	DEBUG_REQUEST_ANDROIDSYNC
+	DEBUG_REQUEST_SERVERSYNC
 };
 
 DUMPDEBUG_PRINTF_FUNC *g_pfnDumpDebugPrintf = IMG_NULL;
@@ -1540,6 +1539,7 @@ PVRSRV_ERROR IMG_CALLCONV PVRSRVFinaliseSystem(IMG_BOOL bInitSuccessful, IMG_UIN
 		if (eError != PVRSRV_OK)
 		{
 			PVRSRVPowerUnlock();
+			PVRSRVDebugRequest(DEBUG_REQUEST_VERBOSITY_MAX, IMG_NULL);
 			return eError;
 		}
 
@@ -1550,7 +1550,6 @@ PVRSRV_ERROR IMG_CALLCONV PVRSRVFinaliseSystem(IMG_BOOL bInitSuccessful, IMG_UIN
 		if (eError != PVRSRV_OK)
 		{
 			PVRSRVPowerUnlock();
-			PVRSRVDebugRequest(DEBUG_REQUEST_VERBOSITY_MAX, IMG_NULL);
 			return eError;
 		}
 

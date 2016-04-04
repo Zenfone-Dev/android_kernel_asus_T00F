@@ -65,7 +65,6 @@ typedef struct _RGXFWIF_FWCOMMONCONTEXT_	*PRGXFWIF_FWCOMMONCONTEXT;
 typedef struct _RGXFWIF_ZSBUFFER_			*PRGXFWIF_ZSBUFFER;
 typedef IMG_UINT32							*PRGXFWIF_SIGBUFFER;
 typedef struct _RGXFWIF_INIT_				*PRGXFWIF_INIT;
-typedef struct _RGXFWIF_RUNTIME_CFG			*PRGXFWIF_RUNTIME_CFG;
 typedef struct _RGXFW_UNITTESTS_			*PRGXFW_UNITTESTS;
 typedef struct _RGXFWIF_TRACEBUF_			*PRGXFWIF_TRACEBUF;
 typedef IMG_UINT8							*PRGXFWIF_HWPERFINFO;
@@ -96,7 +95,6 @@ typedef RGXFWIF_DEV_VIRTADDR				PRGXFWIF_FWCOMMONCONTEXT;
 typedef RGXFWIF_DEV_VIRTADDR				PRGXFWIF_ZSBUFFER;
 typedef RGXFWIF_DEV_VIRTADDR				PRGXFWIF_SIGBUFFER;
 typedef RGXFWIF_DEV_VIRTADDR				PRGXFWIF_INIT;
-typedef RGXFWIF_DEV_VIRTADDR				PRGXFWIF_RUNTIME_CFG;
 typedef RGXFWIF_DEV_VIRTADDR				PRGXFW_UNITTESTS;
 typedef RGXFWIF_DEV_VIRTADDR				PRGXFWIF_TRACEBUF;
 typedef RGXFWIF_DEV_VIRTADDR				PRGXFWIF_HWPERFINFO;
@@ -406,6 +404,12 @@ typedef enum _RGXFWIF_POWER_TYPE_
 	RGXFWIF_POW_APM_LATENCY_CHANGE
 } RGXFWIF_POWER_TYPE;
 
+typedef struct _RGXFWIF_APM_LATENCY_
+{
+	IMG_UINT32	ui32ActivePMLatencyms;
+	IMG_BOOL	bPersistent;
+} RGXFWIF_APM_LATENCY;
+
 typedef struct _RGXFWIF_POWER_REQUEST_
 {
 	RGXFWIF_POWER_TYPE				ePowType;				/*!< Type of power request */
@@ -414,7 +418,7 @@ typedef struct _RGXFWIF_POWER_REQUEST_
 		IMG_UINT32					ui32NumOfDusts;			/*!< Number of active Dusts */
 		IMG_BOOL					bForced;				/*!< If the operation is mandatory */
 		IMG_BOOL					bCancelForcedIdle;		/*!< If the operation is to cancel previously forced idle */
-		IMG_UINT32					ui32ActivePMLatencyms;		/* Number of milliseconds to set APM latency */
+		RGXFWIF_APM_LATENCY				sActivePMLatency;		/* Number of milliseconds to set APM latency */
 	} uPoweReqData;
 } RGXFWIF_POWER_REQUEST;
 
@@ -653,17 +657,6 @@ typedef struct _RGXFWIF_SIGBUF_CTL_
 } RGXFWIF_SIGBUF_CTL;
 
 /*!
- ******************************************************************************
- * Updated configuration post FW data init.
- *****************************************************************************/
-typedef struct _RGXFWIF_RUNTIME_CFG_
-{
-	IMG_UINT32				ui32ActivePMLatencyms;		/* APM latency in ms before signalling IDLE to the host */
-	IMG_BOOL				bActivePMLatencyPersistant;	/* If set, APM latency does not reset to system default each GPU power transition */
-	IMG_UINT32				ui32CoreClockSpeed;		/* Core clock speed, currently only used to calculate timer ticks */
-} RGXFWIF_RUNTIME_CFG;
-
-/*!
  *****************************************************************************
  * Control data for RGX
  *****************************************************************************/
@@ -708,8 +701,6 @@ typedef struct _RGXFWIF_INIT_
 		IMG_UINT64 uiLen;
 		IMG_UINT64 uiXStride;
 	}                       RGXFW_ALIGN sBifTilingCfg[RGXFWIF_NUM_BIF_TILING_CONFIGS];
-
-	PRGXFWIF_RUNTIME_CFG		psRuntimeCfg;
 
 	PRGXFWIF_TRACEBUF		psTraceBufCtl;
 	PRGXFWIF_HWPERFINFO		psHWPerfInfoCtl;

@@ -92,9 +92,7 @@ KERNEL_CROSS_COMPILE ?= undef
 endif
 
 ifneq ($(filter arm64 mips64 x86_64,$(ANDROID_ARCH)),)
-ifeq ($(MULTIARCH),)
-$(warning *** 64-bit architecture detected. Enabling MULTIARCH=1.)
-$(warning *** If you want a 64-bit only build, use MULTIARCH=64only.)
-export MULTIARCH := 1
+ifeq ($(MULTIARCH),1)
+ANDROID_COMBO := 1
 endif
 endif

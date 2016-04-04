@@ -28,10 +28,6 @@
 
 #define to_ov680_device(sub_dev) container_of(sub_dev, struct ov680_device, sd)
 
-static int factory_mode;
-module_param(factory_mode, int, 0644);
-MODULE_PARM_DESC(factory_mode, "Factory mode (0-1)");
-
 static int ov680_i2c_read_reg(struct v4l2_subdev *sd,
 			      u16 reg, u8 *val)
 {
@@ -151,8 +147,8 @@ static int __ov680_flush_reg_array(struct i2c_client *client,
 }
 
 static int __ov680_buf_reg_array(struct i2c_client *client,
-				 struct ov680_write_ctrl *ctrl,
-				 const struct ov680_reg *next)
+				   struct ov680_write_ctrl *ctrl,
+				   const struct ov680_reg *next)
 {
 	int size;
 	u16 *data16;
@@ -306,14 +302,13 @@ static int ov680_check_sensor_avail(struct v4l2_subdev *sd)
 		ret = ov680_read_sensor(sd, sid[i], 0x0001, &data[1]);
 		if (ret || data[0] != OV680_SENSOR_REG0_VAL ||
 		    data[1] != OV680_SENSOR_REG1_VAL) {
-			dev_err(&client->dev,
-				"Subdev OV680 sensor %d with id:0x%x detection failure.\n",
-				i, sid[i]);
+			dev_err(&client->dev, "Subdev OV680 sensor %d with"\
+				" id:0x%x detection failure.\n", i, sid[i]);
 			sensor_fail = true;
 		} else {
 			dev_info(&client->dev,
-				 "Subdev OV680 sensor %d with id:0x%x detection Successful.\n",
-				 i, sid[i]);
+				 "Subdev OV680 sensor %d with id:0x%x"\
+				 " detection Successful.\n", i, sid[i]);
 		}
 	}
 
@@ -399,6 +394,7 @@ static int ov680_write_firmware(struct v4l2_subdev *sd)
 static int ov680_load_firmware(struct v4l2_subdev *sd)
 {
 	struct i2c_client *client = v4l2_get_subdevdata(sd);
+	struct ov680_device *dev = to_ov680_device(sd);
 	int ret;
 	u8 read_value;
 	unsigned int read_timeout = 500;
@@ -457,6 +453,15 @@ static int ov680_load_firmware(struct v4l2_subdev *sd)
 		return -EBUSY;
 	}
 
+	if (dev->probed) {
+		/* turn embedded line on */
+		ret = ov680_write_reg_array(sd, ov680_720p_2s_embedded_line);
+		if (ret) {
+			dev_err(&client->dev, "%s - turn embedded on failed\n",
+					__func__);
+			return ret;
+		}
+	}
 	dev_info(&client->dev, "firmware load successfully.\n");
 	return ret;
 }
@@ -731,7 +736,7 @@ static int ov680_try_mbus_fmt(struct v4l2_subdev *sd,
 }
 
 static int ov680_get_mbus_fmt(struct v4l2_subdev *sd,
-			      struct v4l2_mbus_framefmt *fmt)
+				struct v4l2_mbus_framefmt *fmt)
 {
 	struct ov680_device *dev = to_ov680_device(sd);
 
@@ -949,20 +954,7 @@ static int ov680_s_stream(struct v4l2_subdev *sd, int enable)
 	mutex_lock(&dev->input_lock);
 	if (dev->power_on && enable) {
 		/* start streaming */
-		if (factory_mode) {
-			dev_info(&client->dev, "factory mode requested.\n");
-			ret = ov680_write_reg_array(sd, ov680_720p_2s_factory);
-			if (ret) {
-				dev_err(&client->dev,
-					"%s - send factory failed\n", __func__);
-			} else {
-				ret = ov680_write_reg_array(sd,
-				      ov680_720p_2s_embedded_factory_stream_on);
-			}
-		} else {
-			ret = ov680_write_reg_array(sd,
-				ov680_720p_2s_embedded_stream_on);
-		}
+		ret = ov680_write_reg_array(sd, ov680_720p_2s_embedded_stream_on);
 		if (ret) {
 			dev_err(&client->dev,
 				"%s - stream on failed\n", __func__);
@@ -971,8 +963,9 @@ static int ov680_s_stream(struct v4l2_subdev *sd, int enable)
 			dev->sys_activated = 1;
 		}
 	} else { /* stream off */
-		ret = ov680_write_reg_array(sd,
-					    ov680_720p_2s_embedded_stream_off);
+
+		ret = ov680_i2c_write_reg(sd, REG_SC_03,
+					  REG_SC_03_GLOBAL_DISABLED);
 		if (ret)
 			dev_err(&client->dev,
 				"%s - stream off failed\n", __func__);

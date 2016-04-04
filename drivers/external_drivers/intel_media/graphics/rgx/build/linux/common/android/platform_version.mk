@@ -76,7 +76,7 @@ endef
 # ordering. You need to make sure that strings that are sub-strings of other
 # checked strings appear _later_ in this list.
 #
-# e.g. 'KitKatMR' starts with 'KitKat', but it is not KitKat.
+# e.g. 'JellyBeanMR' starts with 'JellyBean', but it is not JellyBean.
 #
 ifeq ($(call release-starts-with,JellyBeanMR1),1)
 PLATFORM_RELEASE := 4.2
@@ -90,13 +90,11 @@ else ifeq ($(call release-starts-with,KitKatMR),1)
 PLATFORM_RELEASE := 4.4.1
 else ifeq ($(call release-starts-with,KitKat),1)
 PLATFORM_RELEASE := 4.4
-else ifeq ($(call release-starts-with,Lollipop),1)
-PLATFORM_RELEASE := 5.0
 else ifeq ($(PLATFORM_CODENAME),AOSP)
 # AOSP (master) will normally have PLATFORM_CODENAME set to AOSP
-PLATFORM_RELEASE := 5.1
+PLATFORM_RELEASE := 5.0
 else ifeq ($(shell echo $(PLATFORM_RELEASE) | grep -qE "[A-Za-z]+"; echo $$?),0)
-PLATFORM_RELEASE := 5.1
+PLATFORM_RELEASE := 5.0
 endif
 
 PLATFORM_RELEASE_MAJ   := $(shell echo $(PLATFORM_RELEASE) | cut -f1 -d'.')
@@ -130,17 +128,13 @@ is_at_least_kitkat_mr1 := \
 					( test $(PLATFORM_RELEASE_MAJ) -eq 4 && \
 					  test $(PLATFORM_RELEASE_MIN) -eq 4 && \
 					  test $(PLATFORM_RELEASE_PATCH) -ge 1 ) ) && echo 1 || echo 0)
-is_at_least_lollipop := \
+
+# Assume "future versions" are >=5.0, but we don't really know
+is_future_version := \
 	$(shell ( test $(PLATFORM_RELEASE_MAJ) -ge 5 ) && echo 1 || echo 0)
 
-# Assume "future versions" are >=5.1, but we don't really know
-is_future_version := \
-	$(shell ( test $(PLATFORM_RELEASE_MAJ) -gt 5 || \
-				( test $(PLATFORM_RELEASE_MAJ) -eq 5 && \
-				  test $(PLATFORM_RELEASE_MIN) -gt 0 ) ) && echo 1 || echo 0)
-
-# Sometimes a feature is introduced in AOSP master that isn't in the current
-# future version, but both versions are beyond our support level. This variable
+# Sometimes a feature is introduced in AOSP master that isn't on the current
+# PDK branch, but both versions are beyond our support level. This variable
 # can be used to differentiate those builds.
 #
 ifeq ($(PLATFORM_CODENAME)$(is_future_version),AOSP1)
@@ -155,9 +149,6 @@ endif
 ifeq ($(is_future_version),1)
 # Temporarily pin to 19 until it is actually bumped to 20
 API_LEVEL := 19
-else ifeq ($(is_at_least_lollipop),1)
-API_LEVEL := 21
-#API_LEVEL := 20 was l-preview
 else ifeq ($(is_at_least_kitkat),1)
 API_LEVEL := 19
 else ifeq ($(is_at_least_jellybean_mr2),1)
@@ -173,6 +164,6 @@ endif
 #
 ifeq ($(is_future_version),1)
 $(info WARNING: Android version is newer than this DDK supports)
-else ifneq ($(is_at_least_kitkat),1)
+else ifneq ($(is_at_least_jellybean_mr2),1)
 $(info WARNING: Android version is older than this DDK supports)
 endif

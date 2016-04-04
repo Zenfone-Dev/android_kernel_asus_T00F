@@ -154,6 +154,8 @@ struct atomisp_css_params {
 	struct atomisp_css_tnr_config  tnr_config;
 	/* 3A Statistics config */
 	struct atomisp_css_3a_config   s3a_config;
+	/* Advanced Noise Reduction */
+	struct atomisp_css_anr_config  anr_config;
 	struct atomisp_css_gamma_table gamma_table;
 	struct atomisp_css_ctc_table   ctc_table;
 	struct atomisp_css_macc_table  macc_table;
@@ -172,8 +174,6 @@ struct atomisp_css_params {
 	struct atomisp_css_aa_config	aa_config;
 	/* Bayer Anti-Aliasing */
 	struct atomisp_css_aa_config	baa_config;
-	/* Advanced Noise Reduction */
-	struct atomisp_css_anr_config	anr_config;
 	/* eXtra Noise Reduction */
 	struct atomisp_css_xnr_config	xnr_config;
 	/* Color Correction config */
@@ -207,6 +207,9 @@ struct atomisp_css_params {
 	int  dvs_hor_proj_bytes;
 #else /* CSS20 */
 	struct sh_css_3a_output *s3a_output_buf;
+	/* Extended Noise Reduction config */
+	struct atomisp_css_ext_nr_config   ext_nr_config;
+
 	/* DIS Coefficients */
 	short *dis_hor_coef_buf;
 	int    dis_hor_coef_bytes;
@@ -223,6 +226,7 @@ struct atomisp_css_params {
 	struct atomisp_css_wb_config   *default_wb_config;
 	struct atomisp_css_cc_config   *default_cc_config;
 	struct atomisp_css_nr_config   *default_nr_config;
+	struct atomisp_css_ext_nr_config   *default_ext_nr_config;
 	struct atomisp_css_ee_config   *default_ee_config;
 	struct atomisp_css_ob_config   *default_ob_config;
 	struct atomisp_css_de_config   *default_de_config;

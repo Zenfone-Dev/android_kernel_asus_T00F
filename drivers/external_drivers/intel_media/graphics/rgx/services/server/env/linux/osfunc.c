@@ -758,6 +758,7 @@ PVRSRV_ERROR OSInstallDeviceLISR(PVRSRV_DEVICE_CONFIG *psDevConfig,
 {
 #if defined(SUPPORT_SYSTEM_INTERRUPT_HANDLING)
 	return SysInstallDeviceLISR(psDevConfig->ui32IRQ,
+					psDevConfig->bIRQIsShared,
 					psDevConfig->pszName,
 					pfnLISR,
 					pvData,
@@ -768,23 +769,14 @@ PVRSRV_ERROR OSInstallDeviceLISR(PVRSRV_DEVICE_CONFIG *psDevConfig,
 
 	psLISRData = kmalloc(sizeof(LISR_DATA), GFP_KERNEL);
 
+	if (psDevConfig->bIRQIsShared)
+	{
+		flags = IRQF_SHARED;
+	}
+
 	psLISRData->pfnLISR = pfnLISR;
 	psLISRData->pvData = pvData;
 	psLISRData->ui32IRQ = psDevConfig->ui32IRQ;
-
-	if (psDevConfig->bIRQIsShared)
-	{
-		flags |= IRQF_SHARED;
-	}
-
-	if (psDevConfig->eIRQActiveLevel == PVRSRV_DEVICE_IRQ_ACTIVE_HIGH)
-	{
-		flags |= IRQF_TRIGGER_HIGH;
-	}
-	else if (psDevConfig->eIRQActiveLevel == PVRSRV_DEVICE_IRQ_ACTIVE_LOW)
-	{
-		flags |= IRQF_TRIGGER_LOW;
-	}
 
 	PVR_TRACE(("Installing device LISR %s on IRQ %d with cookie %p", psDevConfig->pszName, psDevConfig->ui32IRQ, pvData));
 
@@ -1792,7 +1784,7 @@ PVRSRV_ERROR OSEventObjectSignal(IMG_HANDLE hEventObject)
 */ /**************************************************************************/
 IMG_BOOL OSProcHasPrivSrvInit(void)
 {
-	return capable(CAP_SYS_ADMIN) != 0;
+	return capable(CAP_SYS_MODULE) != 0;
 }
 
 /*************************************************************************/ /*!
@@ -1981,6 +1973,10 @@ struct task_struct *OSGetBridgeLockOwner(void)
 	return gsOwner;
 }
 
+IMG_BOOL OSIsBridgeLockedByMe(void)
+{
+	return (mutex_is_locked(&gPVRSRVLock) && current == gsOwner);
+}
 
 /*************************************************************************/ /*!
 @Function       OSCreateStatisticEntry

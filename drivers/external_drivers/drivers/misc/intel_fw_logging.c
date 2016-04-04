@@ -69,7 +69,7 @@
 
 #define NON_LEGACY()					\
 	((intel_mid_identify_cpu() == INTEL_MID_CPU_CHIP_TANGIER &&	\
-	  intel_mid_soc_stepping() >= 1) ||				\
+	  intel_mid_soc_stepping() == 1) ||				\
 	 (intel_mid_identify_cpu() == INTEL_MID_CPU_CHIP_ANNIEDALE))
 
 /* The legacy fabric error logging struct (e.g. Clovertrail) takes 12 dwords
@@ -2454,14 +2454,8 @@ static int intel_fw_logging_init(void)
 		if (ret)
 			pr_err("IPC_CMD_SCU_LOG_ADDR IPC failed\n");
 		else
-                {
 			pr_err("Unexpected result for "
 			       "IPC_CMD_SCU_LOG_ADDR\n");
-			pr_err("rbuf[0] is: 0x%08X\n", rbuf[0]);
-			pr_err("rbuf[1] is: 0x%08X\n", rbuf[1]);
-			pr_err("rbuf[2] is: 0x%08X\n", rbuf[2]);
-			pr_err("rbuf[3] is: 0x%08X\n", rbuf[3]);
-		}
 
 		global_scutrace_enable = false;
 		global_unsolicit_scutrace_enable = false;
@@ -2499,15 +2493,8 @@ static int intel_fw_logging_init(void)
 			if (ret)
 				pr_err("IPC_CMD_SCU_EN_STATUS IPC failed\n");
 			else
-			{
 				pr_err("Unexpected result for "
 				       "IPC_CMD_SCU_EN_STATUS\n");
-				pr_err("rbuf[0] is: 0x%08X\n", rbuf[0]);
-				pr_err("rbuf[1] is: 0x%08X\n", rbuf[1]);
-				pr_err("rbuf[2] is: 0x%08X\n", rbuf[2]);
-				pr_err("rbuf[3] is: 0x%08X\n", rbuf[3]);
-			}
-
 		} else {
 			global_scutrace_enable = true;
 			pr_info("SCU trace logging is enabled\n");

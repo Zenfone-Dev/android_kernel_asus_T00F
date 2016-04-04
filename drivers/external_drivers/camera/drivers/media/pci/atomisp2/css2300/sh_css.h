@@ -522,6 +522,7 @@ enum sh_css_rx_irq_info {
 #if defined(HAS_RX_VERSION_2)
 	SH_CSS_RX_IRQ_INFO_INIT_TIMEOUT     = 1U << 15,
 #endif
+	SH_CSS_RX_IRQ_INFO_ERR_ECC_NO_ERR   = 1U << 16,
 };
 
 /** Errors, these values are used as the return value for most
@@ -943,6 +944,9 @@ sh_css_rx_get_interrupt_info(unsigned int *irq_bits);
  */
 void
 sh_css_rx_clear_interrupt_info(unsigned int irq_bits);
+
+void
+sh_css_rx_clear_interrupt_status(unsigned int irq_bits);
 
 /** @brief Enable or disable specific interrupts.
  *

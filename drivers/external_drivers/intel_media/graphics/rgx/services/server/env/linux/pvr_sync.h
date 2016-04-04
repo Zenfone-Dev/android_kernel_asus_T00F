@@ -39,7 +39,6 @@ COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
 IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */ /**************************************************************************/
-/* vi: set ts=8: */
 
 #ifndef _PVR_SYNC_H
 #define _PVR_SYNC_H
@@ -48,32 +47,35 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "rgx_fwif_shared.h"
 
 /* Services internal interface */
-enum PVRSRV_ERROR pvr_sync_init(void);
-void pvr_sync_deinit(void);
+PVRSRV_ERROR PVRFDSyncDeviceInitKM(void);
+void PVRFDSyncDeviceDeInitKM(void);
 
 /* to keep track of the intermediate allocations done for the FD merge */
-struct pvr_sync_fd_merge_data
+typedef struct _FDMERGE_DATA_
 {
 	PRGXFWIF_UFO_ADDR *pauiFenceUFOAddress;
-	__u32             *paui32FenceValue;
+	IMG_UINT32        *paui32FenceValue;
 	PRGXFWIF_UFO_ADDR *pauiUpdateUFOAddress;
-	__u32             *paui32UpdateValue;
-};
+	IMG_UINT32        *paui32UpdateValue;
+} FDMERGE_DATA;
 
-enum PVRSRV_ERROR 
-pvr_sync_merge_fences(__u32                         *pui32ClientFenceCountOut,
-		      PRGXFWIF_UFO_ADDR             **ppauiFenceUFOAddressOut,
-		      __u32                         **ppaui32FenceValueOut,
-		      __u32                         *pui32ClientUpdateCountOut,
-		      PRGXFWIF_UFO_ADDR             **ppauiUpdateUFOAddressOut,
-		      __u32                         **ppaui32UpdateValueOut,
-		      const char                    *pszName,
-		      bool                          bUpdate,
-		      const __u32                   ui32NumFDs,
-		      const __s32                   *paui32FDs,
-		      struct pvr_sync_fd_merge_data *psFDMergeData);
+IMG_INTERNAL PVRSRV_ERROR 
+PVRFDSyncMergeFencesKM(IMG_UINT32        *pui32ClientFenceCountOut,
+					   PRGXFWIF_UFO_ADDR **ppauiFenceUFOAddressOut,
+					   IMG_UINT32        **ppaui32FenceValueOut,
+					   IMG_UINT32        *pui32ClientUpdateCountOut,
+					   PRGXFWIF_UFO_ADDR **ppauiUpdateUFOAddressOut,
+					   IMG_UINT32        **ppaui32UpdateValueOut,
+					   const IMG_CHAR*   pszName,
+					   const IMG_BOOL    bUpdate,
+					   const IMG_UINT32  ui32NumFDs,
+					   const IMG_INT32   *paui32FDs,
+					   FDMERGE_DATA      *psFDMergeData);
 
-IMG_VOID pvr_sync_merge_fences_cleanup(struct pvr_sync_fd_merge_data *psFDMergeData);
-enum PVRSRV_ERROR pvr_sync_nohw_update_fence(__s32 i32FDFence);
+IMG_INTERNAL IMG_VOID
+PVRFDSyncMergeFencesCleanupKM(FDMERGE_DATA *psFDMergeData);
+
+PVRSRV_ERROR
+PVRFDSyncNoHwUpdateFenceKM(IMG_INT32 i32FDFence);
 
 #endif /* _PVR_SYNC_H */

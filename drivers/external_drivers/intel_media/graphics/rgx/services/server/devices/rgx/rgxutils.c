@@ -79,14 +79,28 @@ PVRSRV_ERROR RGXRunScript(PVRSRV_RGXDEV_INFO	*psDevInfo,
 			{
 				IMG_UINT32	ui32RegVal;
 				ui32RegVal = OSReadHWReg32(psDevInfo->pvRegsBaseKM,  psComm->sDBGReadHWReg.ui32Offset);
-				PVR_DUMPDEBUG_LOG(("%s: 0x%08X", psComm->sDBGReadHWReg.aszName, ui32RegVal));
+				if (pfnDumpDebugPrintf)
+				{
+					pfnDumpDebugPrintf("%s: 0x%08X", psComm->sDBGReadHWReg.aszName, ui32RegVal);
+				}
+				else
+				{
+					PVR_LOG(("%s: 0x%08X", psComm->sDBGReadHWReg.aszName, ui32RegVal));
+				}
 				break;
 			}
 			case RGX_INIT_OP_DBG_READ64_HW_REG:
 			{
 				IMG_UINT64	ui64RegVal;
 				ui64RegVal = OSReadHWReg64(psDevInfo->pvRegsBaseKM, psComm->sDBGReadHWReg.ui32Offset);
-				PVR_DUMPDEBUG_LOG(("%s: 0x%016llX", psComm->sDBGReadHWReg.aszName, ui64RegVal));
+				if (pfnDumpDebugPrintf)
+				{
+					pfnDumpDebugPrintf("%s: 0x%016llX", psComm->sDBGReadHWReg.aszName, ui64RegVal);
+				}
+				else
+				{
+					PVR_LOG(("%s: 0x%016llX", psComm->sDBGReadHWReg.aszName, ui64RegVal));
+				}
 				break;
 			}
 			case RGX_INIT_OP_WRITE_HW_REG:
@@ -247,11 +261,25 @@ PVRSRV_ERROR RGXRunScript(PVRSRV_RGXDEV_INFO	*psDevInfo,
 				ui32RegVal3 = OSReadHWReg32(psDevInfo->pvRegsBaseKM,  psComm->sDBGCalc.ui32Offset3);
 				if (ui32RegVal1 + ui32RegVal2 > ui32RegVal3)
 				{
-					PVR_DUMPDEBUG_LOG(("%s: 0x%08X", psComm->sDBGCalc.aszName, ui32RegVal1 + ui32RegVal2 - ui32RegVal3));
+					if (pfnDumpDebugPrintf)
+					{
+						pfnDumpDebugPrintf("%s: 0x%08X", psComm->sDBGCalc.aszName, ui32RegVal1 + ui32RegVal2 - ui32RegVal3);
+					}
+					else
+					{
+						PVR_LOG(("%s: 0x%08X", psComm->sDBGCalc.aszName, ui32RegVal1 + ui32RegVal2 - ui32RegVal3));
+					}
 				}
 				else
 				{
-					PVR_DUMPDEBUG_LOG(("%s: 0x%08X", psComm->sDBGCalc.aszName, 0));
+					if (pfnDumpDebugPrintf)
+					{
+						pfnDumpDebugPrintf("%s: 0x%08X", psComm->sDBGCalc.aszName, 0);
+					}
+					else
+					{
+						PVR_LOG(("%s: 0x%08X", psComm->sDBGCalc.aszName, 0));
+					}
 				}
 				break;
 			}
@@ -262,7 +290,14 @@ PVRSRV_ERROR RGXRunScript(PVRSRV_RGXDEV_INFO	*psDevInfo,
 			}
 			case RGX_INIT_OP_DBG_STRING:
 			{
-				PVR_DUMPDEBUG_LOG(("%s", psComm->sDBGString.aszString));
+				if (pfnDumpDebugPrintf)
+				{
+					pfnDumpDebugPrintf("%s", psComm->sDBGString.aszString);
+				}
+				else
+				{
+					PVR_LOG(("%s", psComm->sDBGString.aszString));
+				}
 				break;
 			}
 			case RGX_INIT_OP_HALT:

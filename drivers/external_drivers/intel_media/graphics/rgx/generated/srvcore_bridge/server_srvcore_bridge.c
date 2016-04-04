@@ -117,7 +117,7 @@ PVRSRVBridgeConnect(IMG_UINT32 ui32BridgeID,
 
 
 	psConnectOUT->eError =
-		PVRSRVConnectKM(psConnection,
+		PVRSRVConnectKM(
 					psConnectIN->ui32Flags,
 					psConnectIN->ui32ClientBuildOptions,
 					psConnectIN->ui32ClientDDKVersion,
@@ -347,6 +347,30 @@ PVRSRVBridgeReleaseDeviceData(IMG_UINT32 ui32BridgeID,
 
 
 ReleaseDeviceData_exit:
+
+	return 0;
+}
+
+static IMG_INT
+PVRSRVBridgeInitSrvConnect(IMG_UINT32 ui32BridgeID,
+					 PVRSRV_BRIDGE_IN_INITSRVCONNECT *psInitSrvConnectIN,
+					 PVRSRV_BRIDGE_OUT_INITSRVCONNECT *psInitSrvConnectOUT,
+					 CONNECTION_DATA *psConnection)
+{
+
+	PVRSRV_BRIDGE_ASSERT_CMD(ui32BridgeID, PVRSRV_BRIDGE_SRVCORE_INITSRVCONNECT);
+
+	PVR_UNREFERENCED_PARAMETER(psInitSrvConnectIN);
+
+
+
+
+	psInitSrvConnectOUT->eError =
+		PVRSRVInitSrvConnectKM(psConnection
+					);
+
+
+
 
 	return 0;
 }
@@ -885,6 +909,7 @@ PVRSRV_ERROR RegisterSRVCOREFunctions(IMG_VOID)
 	SetDispatchTableEntry(PVRSRV_BRIDGE_SRVCORE_ENUMERATEDEVICES, PVRSRVBridgeEnumerateDevices);
 	SetDispatchTableEntry(PVRSRV_BRIDGE_SRVCORE_ACQUIREDEVICEDATA, PVRSRVBridgeAcquireDeviceData);
 	SetDispatchTableEntry(PVRSRV_BRIDGE_SRVCORE_RELEASEDEVICEDATA, PVRSRVBridgeReleaseDeviceData);
+	SetDispatchTableEntry(PVRSRV_BRIDGE_SRVCORE_INITSRVCONNECT, PVRSRVBridgeInitSrvConnect);
 	SetDispatchTableEntry(PVRSRV_BRIDGE_SRVCORE_INITSRVDISCONNECT, PVRSRVBridgeInitSrvDisconnect);
 	SetDispatchTableEntry(PVRSRV_BRIDGE_SRVCORE_ACQUIREGLOBALEVENTOBJECT, PVRSRVBridgeAcquireGlobalEventObject);
 	SetDispatchTableEntry(PVRSRV_BRIDGE_SRVCORE_RELEASEGLOBALEVENTOBJECT, PVRSRVBridgeReleaseGlobalEventObject);

@@ -259,11 +259,6 @@ PMRLockSysPhysAddressesNested(PMR *psPMR,
 extern PVRSRV_ERROR
 PMRUnlockSysPhysAddresses(PMR *psPMR);
 
-IMG_VOID PMRLock(void);
-IMG_VOID PMRUnlock(void);
-IMG_BOOL PMRIsLocked(void);
-IMG_BOOL PMRIsLockedByMe(void);
-
 /*
  * PhysmemPMRExport()
  *

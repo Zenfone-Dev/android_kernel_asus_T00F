@@ -36,7 +36,7 @@
 #include "atomisp_ioctl.h"
 #include "atomisp-regs.h"
 #include "atomisp_compat.h"
-
+#include <linux/hid-holtekff.h>
 #include "sh_css_hrt.h"
 
 #ifndef CSS20
@@ -48,7 +48,8 @@
 #include "irq.h"
 
 #include "hrt/hive_isp_css_mm_hrt.h"
-
+#include <linux/atomisp.h>
+extern int xe_debug_flag;
 /* for v4l2_capability */
 static const char *DRIVER = "atomisp";	/* max size 15 */
 static const char *CARD = "ATOM ISP";	/* max size 31 */
@@ -965,8 +966,9 @@ int __atomisp_reqbufs(struct file *file, void *fh,
 
 	if (req->count == 0) {
 		mutex_lock(&pipe->capq.vb_lock);
-		if (!list_empty(&pipe->capq.stream))
+		if (!list_empty(&pipe->capq.stream)) {
 			videobuf_queue_cancel(&pipe->capq);
+		}
 		atomisp_videobuf_free_queue(&pipe->capq);
 		mutex_unlock(&pipe->capq.vb_lock);
 		return 0;
@@ -1385,11 +1387,13 @@ static int atomisp_streamon(struct file *file, void *fh,
 		    atomisp_subdev_source_pad(vdev)
 		    == ATOMISP_SUBDEV_PAD_SOURCE_CAPTURE) {
 			if (asd->run_mode->val == ATOMISP_RUN_MODE_VIDEO)
-				dev_dbg(isp->dev, "SDV last video raw buffer id: %u\n",
-					asd->latest_preview_exp_id);
+			    dev_dbg(isp->dev,
+				"SDV last video raw buffer id: %u\n",
+				asd->latest_preview_exp_id);
 			else
-				dev_dbg(isp->dev, "ZSL last preview raw buffer id: %u\n",
-					asd->latest_preview_exp_id);
+			    dev_dbg(isp->dev,
+				"ZSL last preview raw buffer id: %u\n",
+				asd->latest_preview_exp_id);
 
 			if (asd->delayed_init != ATOMISP_DELAYED_INIT_DONE) {
 				flush_work(&asd->delayed_init_work);
@@ -1534,6 +1538,7 @@ int __atomisp_streamoff(struct file *file, void *fh, enum v4l2_buf_type type)
 	int ret;
 	unsigned long flags;
 	bool first_streamoff = false;
+	int icount = 0;
 #ifdef PUNIT_CAMERA_BUSY
 	u32 msg_ret;
 #endif
@@ -1682,6 +1687,21 @@ stopsensor:
 	if (!isp->sw_contex.file_input)
 		ret = v4l2_subdev_call(isp->inputs[asd->input_curr].camera,
 				       video, s_stream, 0);
+
+	if (0 == strncmp(isp->inputs[asd->input_curr].camera->name, "mn34130", strlen("mn34130"))
+		|| 0 == strncmp(isp->inputs[asd->input_curr].camera->name, "gc0310", strlen("gc0310"))
+          || 0 == strncmp(isp->inputs[asd->input_curr].camera->name, "t4k37", strlen("t4k37"))
+	        || 0 == strncmp(isp->inputs[asd->input_curr].camera->name, "t4k35", strlen("t4k35"))
+              || 0 == strncmp(isp->inputs[asd->input_curr].camera->name, "gc2155", strlen("gc2155"))){
+            while (atomisp_css_rx_err_ecc_no_err_check(isp)) {
+	                icount++;
+	                msleep(10);
+	                if (icount > 100) {
+	                        break;
+	                }
+	                pr_info("delay for frame: %d\n", icount);
+	        }
+	}
 
 	if (isp->flash) {
 		asd->params.num_flash_frames = 0;
@@ -1971,6 +1991,11 @@ static int atomisp_camera_g_ext_ctrls(struct file *file, void *fh,
 				isp->inputs[asd->input_curr].camera,
 				sensor, g_skip_frames, (u32 *)&ctrl.value);
 			break;
+		case V4L2_CID_G_XE_FLASH_INSETRED:
+            ctrl.value = Xe_flash_inserted();
+            printk(KERN_INFO "ASUSBSP --- ctrl.value is %d \n", ctrl.value);
+            ret = 0;
+            break;
 		default:
 			ret = -EINVAL;
 		}
@@ -2075,6 +2100,20 @@ static int atomisp_camera_s_ext_ctrls(struct file *file, void *fh,
 			mutex_lock(&isp->mutex);
 			ret = atomisp_digital_zoom(asd, 1, &ctrl.value);
 			mutex_unlock(&isp->mutex);
+			break;
+		case V4L2_CID_XE_FLASH_INTENSITY:
+            isp->xe_flash_pulse = ctrl.value&0xFFFF;
+            isp->xe_flash_delay = (ctrl.value&0xFFFF0000)>>16;
+            printk("ASUSBSP --- V4L2_CID_XE_FLASH_INTENSITY \n");
+//            printk("ASUSBSP --- isp->xe_flash_pulse is %d \n", isp->xe_flash_pulse);
+//            printk("ASUSBSP --- isp->xe_flash_delay is %d \n", isp->xe_flash_delay);
+            ret = 0;
+            break;
+        case V4L2_CID_XE_FLASH_CHARGING_CTRL:
+            {
+                u8 send_buff[] = {1,ctrl.value,0,0,0,0,0,0};
+                Xe_flash_send_cmd(send_buff);
+            }
 			break;
 		default:
 			ctr = v4l2_ctrl_find(&asd->ctrl_handler, ctrl.id);
@@ -2213,7 +2252,11 @@ static int atomisp_s_parm_file(struct file *file, void *fh,
 }
 
 static long atomisp_vidioc_default(struct file *file, void *fh,
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3, 10, 0))
 	bool valid_prio, unsigned int cmd, void *arg)
+#else
+	bool valid_prio, int cmd, void *arg)
+#endif
 {
 	struct video_device *vdev = video_devdata(file);
 	struct atomisp_device *isp = video_get_drvdata(vdev);
@@ -2283,7 +2326,8 @@ static long atomisp_vidioc_default(struct file *file, void *fh,
 		break;
 
 	case ATOMISP_IOC_S_ISP_PARM:
-		err = atomisp_param(asd, 1, arg);
+		//workaround for setting extended  parameters
+		err = atomisp_param_ext(asd, arg);
 		break;
 
 	case ATOMISP_IOC_G_3A_STAT:
@@ -2378,8 +2422,16 @@ static long atomisp_vidioc_default(struct file *file, void *fh,
 					core, ioctl, cmd, arg);
 
 	case ATOMISP_IOC_S_EXPOSURE:
+#if 1	// <ChungYi>    leong++
+	case ATOMISP_TEST_CMD_SET_VCM_POS:
+	case ATOMISP_TEST_CMD_GET_VCM_POS:
+	case ATOMISP_TEST_CMD_SET_TORCH:
+	case ATOMISP_TEST_CMD_SET_FLASH:
+#endif
 	case ATOMISP_IOC_G_SENSOR_CALIBRATION_GROUP:
 	case ATOMISP_IOC_G_SENSOR_PRIV_INT_DATA:
+	case ATOMISP_IOC_S_BINNING_SUM:		// 	// <ChungYi>    leong++
+	case ATOMISP_IOC_S_SET_DRAKMODE:
 		mutex_unlock(&isp->mutex);
 		return v4l2_subdev_call(isp->inputs[asd->input_curr].camera,
 					core, ioctl, cmd, arg);

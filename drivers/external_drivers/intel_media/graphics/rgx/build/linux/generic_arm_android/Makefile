@@ -66,12 +66,6 @@ ifeq ($(TARGET_DEVICE),armv7-a-neon)
 KERNEL_CROSS_COMPILE ?= arm-eabi-
 endif
 
-# FORCE_UNCACHED_ALIGN is used to force the alignment in
-# services/include/rgx_fwif_shared.h
-ifeq ($(TARGETING_AARCH64),1)
-FORCE_UNCACHED_ALIGN := 1
-endif # TARGETING_AARCH64 ?
-
 HAL_VARIANT ?= generic
 PVR_SYSTEM := rgx_nohw
 NO_HARDWARE := 1

@@ -363,6 +363,31 @@ int atomisp_subdev_set_selection(struct v4l2_subdev *sd,
 			padding_h = 12;
 		}
 
+		if(!(strncmp(isp->inputs[isp_sd->input_curr].camera->name,"hm2056",6))) {
+			if(crop[pad]->width == 1620)
+				padding_w = 20;
+			else
+				padding_w = 12;
+
+			if(crop[pad]->height == 1220)
+				padding_h = 20;
+			else
+				padding_h = 12;
+
+	        } else if(!(strncmp(isp->inputs[isp_sd->input_curr].camera->name,"imx111",6))
+			|| !(strncmp(isp->inputs[isp_sd->input_curr].camera->name,"imx219",6)))
+		{
+		        if(crop[pad]->width == 1640)
+		                padding_w = 40;
+			else if(crop[pad]->width == 820)
+				padding_w = 20;
+
+		        if(crop[pad]->height == 922)
+		                padding_h = 22;
+		        else if(crop[pad]->height == 1232)
+		                padding_h = 32;
+		}
+
 		if (atomisp_subdev_format_conversion(isp_sd,
 						     isp_sd->capture_pad)
 		    && crop[pad]->width && crop[pad]->height)

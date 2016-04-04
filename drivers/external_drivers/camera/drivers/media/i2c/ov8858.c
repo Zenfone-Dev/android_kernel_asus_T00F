@@ -21,7 +21,6 @@
 
 #include <linux/delay.h>
 #include <linux/module.h>
-#include <asm/spid.h>
 #include <media/v4l2-chip-ident.h>
 #include <media/v4l2-device.h>
 #include "ov8858.h"
@@ -353,18 +352,13 @@ static int __ov8858_update_frame_timing(struct v4l2_subdev *sd,
 static int __ov8858_set_exposure(struct v4l2_subdev *sd, int exposure, int gain,
 				 int dig_gain, u16 *hts, u16 *vts)
 {
-	struct ov8858_device *dev = to_ov8858_sensor(sd);
 	struct i2c_client *client = v4l2_get_subdevdata(sd);
 	int exp_val, ret;
 	dev_dbg(&client->dev, "%s, exposure = %d, gain=%d, dig_gain=%d\n",
 		__func__, exposure, gain, dig_gain);
 
-	if (dev->limit_exposure_flag) {
-		if (exposure > *vts - OV8858_INTEGRATION_TIME_MARGIN)
-			exposure = *vts - OV8858_INTEGRATION_TIME_MARGIN;
-	} else {
-		if (*vts < exposure + OV8858_INTEGRATION_TIME_MARGIN)
-			*vts = (u16) exposure + OV8858_INTEGRATION_TIME_MARGIN;
+	if (*vts < exposure + OV8858_INTEGRATION_TIME_MARGIN) {
+		*vts = (u16) exposure + OV8858_INTEGRATION_TIME_MARGIN;
 	}
 
 	ret = __ov8858_update_frame_timing(sd, hts, vts);
@@ -406,16 +400,8 @@ static int __ov8858_set_exposure(struct v4l2_subdev *sd, int exposure, int gain,
 			return ret;
 	}
 
-	ret = ov8858_write_reg(client, OV8858_16BIT, OV8858_LONG_GAIN,
+	return ov8858_write_reg(client, OV8858_16BIT, OV8858_LONG_GAIN,
 				gain & 0x07ff);
-	if (ret)
-		return ret;
-
-	dev->gain = gain;
-	dev->exposure = exposure;
-	dev->digital_gain = dig_gain;
-
-	return 0;
 }
 
 static int ov8858_set_exposure(struct v4l2_subdev *sd, int exposure, int gain,
@@ -455,6 +441,12 @@ static int ov8858_set_exposure(struct v4l2_subdev *sd, int exposure, int gain,
 	ret = __ov8858_set_exposure(sd, exposure, gain, dig_gain, &hts, &vts);
 	if (ret)
 		goto out;
+
+	/* Updated the device variable. These are the current values. */
+	dev->gain = gain;
+	dev->exposure = exposure;
+	dev->digital_gain = dig_gain;
+
 out:
 	/* Group hold launch - delayed launch */
 	if (dev->streaming)
@@ -600,13 +592,6 @@ static int __ov8858_init(struct v4l2_subdev *sd)
 	dev->exposure = 256;
 	dev->gain = 16;
 	dev->digital_gain = 1024;
-	dev->limit_exposure_flag = false;
-
-	if (SPID_PRODUCT_ID(INTEL, MOFD, TABLET, EP, PRO) ||
-	    SPID_PRODUCT_ID(INTEL, MOFD, TABLET, EP, ENG)) {
-		ov8858_BasicSettings[2].val = 0x02; /* pll1_pre_div = /2 */
-		ov8858_BasicSettings[3].val = 0x50; /* pll1_multiplier = 80 */
-	}
 
 	dev_dbg(&client->dev, "%s: Writing basic settings to ov8858\n",
 		__func__);
@@ -629,46 +614,13 @@ static void ov8858_uninit(struct v4l2_subdev *sd)
 {
 	struct i2c_client *client = v4l2_get_subdevdata(sd);
 	struct ov8858_device *dev = to_ov8858_sensor(sd);
-	struct v4l2_ctrl *ctrl;
 	dev_dbg(&client->dev, "%s:\n", __func__);
 
 	dev->exposure = 0;
 	dev->gain     = 0;
 	dev->digital_gain = 0;
-	dev->limit_exposure_flag = false;
-	mutex_unlock(&dev->input_lock);
-	ctrl = v4l2_ctrl_find(sd->ctrl_handler, V4L2_CID_EXPOSURE_AUTO_PRIORITY);
-	if (ctrl)
-		v4l2_ctrl_s_ctrl(ctrl, V4L2_EXPOSURE_AUTO);
-	mutex_lock(&dev->input_lock);
 }
 
-static int ov8858_g_comp_delay(struct v4l2_subdev *sd, unsigned int *usec)
-{
-	struct i2c_client *client = v4l2_get_subdevdata(sd);
-	struct ov8858_device *dev = to_ov8858_sensor(sd);
-	int ret = 0, exposure;
-	u16 vts, data;
-
-	if (dev->exposure == 0) {
-		ret = ov8858_read_reg(client, OV8858_16BIT,
-				       OV8858_LONG_EXPO + 1, &data);
-		if (ret)
-			return ret;
-		exposure = data;
-		exposure >>= 4;
-	} else {
-		exposure = dev->exposure;
-	}
-
-	ret = ov8858_read_reg(client, OV8858_16BIT, OV8858_TIMING_VTS, &vts);
-	if (ret || vts == 0)
-		vts = OV8858_DEPTH_VTS_CONST;
-
-	*usec = (exposure * 33333 / vts) - OV8858_DEPTH_COMP_CONST;
-
-	return 0;
-}
 static long ov8858_ioctl(struct v4l2_subdev *sd, unsigned int cmd, void *arg)
 {
 	struct i2c_client *client = v4l2_get_subdevdata(sd);
@@ -677,12 +629,11 @@ static long ov8858_ioctl(struct v4l2_subdev *sd, unsigned int cmd, void *arg)
 		return ov8858_s_exposure(sd, (struct atomisp_exposure *)arg);
 	case ATOMISP_IOC_G_SENSOR_PRIV_INT_DATA:
 		return ov8858_g_priv_int_data(sd, arg);
-	case ATOMISP_IOC_G_DEPTH_SYNC_COMP:
-		return ov8858_g_comp_delay(sd, (unsigned int *)arg);
 	default:
 		dev_err(&client->dev, "Unhandled command 0x%X\n", cmd);
 		return -EINVAL;
 	}
+	return 0;
 }
 
 static int power_up(struct v4l2_subdev *sd)
@@ -748,15 +699,16 @@ static int power_down(struct v4l2_subdev *sd)
 static int __ov8858_s_power(struct v4l2_subdev *sd, int on)
 {
 	struct ov8858_device *dev = to_ov8858_sensor(sd);
-	int ret, r = 0;
+	int ret, r;
 
 	if (on == 0) {
 		ov8858_uninit(sd);
-		if (dev->vcm_driver && dev->vcm_driver->power_down)
-			r = dev->vcm_driver->power_down(sd);
 		ret = power_down(sd);
-		if (r != 0 && ret == 0)
-			ret = r;
+		if (dev->vcm_driver && dev->vcm_driver->power_down) {
+			r = dev->vcm_driver->power_down(sd);
+			if (ret == 0)
+				ret = r;
+		}
 	} else {
 		ret = power_up(sd);
 		if (ret)
@@ -997,7 +949,6 @@ static int ov8858_get_intg_factor(struct v4l2_subdev *sd,
 	unsigned int sys_pre_div;
 	unsigned int sclk_pdiv;
 	unsigned int sclk = ext_clk;
-	u16 hts;
 	int ret;
 
 	memset(&info->data, 0, sizeof(info->data));
@@ -1068,11 +1019,6 @@ static int ov8858_get_intg_factor(struct v4l2_subdev *sd,
 
 	m->coarse_integration_time_min = 0;
 	m->coarse_integration_time_max_margin = OV8858_INTEGRATION_TIME_MARGIN;
-	ret = ov8858_read_reg(client, OV8858_16BIT, OV8858_TIMING_HTS, &hts);
-	if (ret < 0)
-		return ret;
-	m->hts = hts;
-	dev_dbg(&client->dev, "%s: get HTS %d\n", __func__, hts);
 
 	/* OV Sensor do not use fine integration time. */
 	m->fine_integration_time_min = 0;
@@ -1406,29 +1352,7 @@ static int ov8858_s_stream(struct v4l2_subdev *sd, int enable)
 	struct ov8858_device *dev = to_ov8858_sensor(sd);
 	struct i2c_client *client = v4l2_get_subdevdata(sd);
 	int ret;
-	u16 val;
 	dev_dbg(&client->dev, "%s: enable = %d\n", __func__, enable);
-
-	/* Set orientation */
-	ret = ov8858_read_reg(client, OV8858_8BIT, OV8858_FORMAT2, &val);
-	if (ret)
-		return ret;
-
-	ret = ov8858_write_reg(client, OV8858_8BIT, OV8858_FORMAT2,
-			       dev->hflip ? val | OV8858_FLIP_ENABLE :
-			       val & ~OV8858_FLIP_ENABLE);
-	if (ret)
-		return ret;
-
-	ret = ov8858_read_reg(client, OV8858_8BIT, OV8858_FORMAT1, &val);
-	if (ret)
-		return ret;
-
-	ret = ov8858_write_reg(client, OV8858_8BIT, OV8858_FORMAT1,
-			       dev->vflip ? val | OV8858_FLIP_ENABLE :
-			       val & ~OV8858_FLIP_ENABLE);
-	if (ret)
-		return ret;
 
 	mutex_lock(&dev->input_lock);
 	if (enable) {
@@ -1708,19 +1632,6 @@ static int ov8858_s_ctrl(struct v4l2_ctrl *ctrl)
 		if (dev->vcm_driver && dev->vcm_driver->t_focus_abs)
 			return dev->vcm_driver->t_focus_abs(&dev->sd,
 							    ctrl->val);
-		return 0;
-	case V4L2_CID_EXPOSURE_AUTO_PRIORITY:
-		if (ctrl->val == V4L2_EXPOSURE_AUTO)
-			dev->limit_exposure_flag = false;
-		else if (ctrl->val == V4L2_EXPOSURE_APERTURE_PRIORITY)
-			dev->limit_exposure_flag = true;
-		return 0;
-	case V4L2_CID_HFLIP:
-		dev->hflip = ctrl->val;
-		return 0;
-	case V4L2_CID_VFLIP:
-		dev->vflip = ctrl->val;
-		return 0;
 	default:
 		dev_err(&client->dev, "%s: Error: Invalid ctrl: 0x%X\n",
 			__func__, ctrl->id);
@@ -1741,7 +1652,6 @@ static int ov8858_g_ctrl(struct v4l2_ctrl *ctrl)
 		if (dev->vcm_driver && dev->vcm_driver->q_focus_status)
 			return dev->vcm_driver->q_focus_status(&dev->sd,
 							       &(ctrl->val));
-		return 0;
 	case V4L2_CID_BIN_FACTOR_HORZ:
 		r_odd = ov8858_get_register_8bit(&dev->sd, OV8858_H_INC_ODD,
 						 dev->curr_res_table[i].regs);
@@ -1765,12 +1675,7 @@ static int ov8858_g_ctrl(struct v4l2_ctrl *ctrl)
 			return r_even;
 		ctrl->val = fls(r_odd + (r_even)) - 2;
 		return 0;
-	case V4L2_CID_HFLIP:
-		ctrl->val = dev->hflip;
-		break;
-	case V4L2_CID_VFLIP:
-		ctrl->val = dev->vflip;
-		break;
+
 	default:
 		dev_warn(&client->dev,
 			 "%s: Error: Invalid ctrl: 0x%X\n", __func__, ctrl->id);
@@ -1974,22 +1879,6 @@ static const struct v4l2_ctrl_config ctrl_run_mode = {
 static const struct v4l2_ctrl_config ctrls[] = {
 	{
 		.ops = &ctrl_ops,
-		.id = V4L2_CID_VFLIP,
-		.name = "Vertical flip",
-		.type = V4L2_CTRL_TYPE_BOOLEAN,
-		.min = false,
-		.max = true,
-		.step = 1,
-	}, {
-		.ops = &ctrl_ops,
-		.id = V4L2_CID_HFLIP,
-		.name = "Horizontal flip",
-		.type = V4L2_CTRL_TYPE_BOOLEAN,
-		.min = false,
-		.max = true,
-		.step = 1,
-	}, {
-		.ops = &ctrl_ops,
 		.id = V4L2_CID_EXPOSURE_ABSOLUTE,
 		.name = "Absolute exposure",
 		.type = V4L2_CTRL_TYPE_MENU,
@@ -2085,14 +1974,6 @@ static const struct v4l2_ctrl_config ctrls[] = {
 		.max = OV8858_BIN_FACTOR_MAX,
 		.step = 1,
 		.flags = V4L2_CTRL_FLAG_READ_ONLY | V4L2_CTRL_FLAG_VOLATILE,
-	}, {
-		.ops = &ctrl_ops,
-		.id = V4L2_CID_EXPOSURE_AUTO_PRIORITY,
-		.name = "Exposure auto priority",
-		.type = V4L2_CTRL_TYPE_INTEGER,
-		.min = V4L2_EXPOSURE_AUTO,
-		.max = V4L2_EXPOSURE_APERTURE_PRIORITY,
-		.step = 1,
 	}
 };
 
