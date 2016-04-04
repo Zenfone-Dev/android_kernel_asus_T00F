@@ -91,9 +91,9 @@
 #define NO_SLEEP_ON (1 << 2)
 #define CONFIGURED (1 << 7)
 
-//#define ASUS_TOUCH_PALM_NODE	//<ASUS_Proc+>
+#define ASUS_TOUCH_PALM_NODE	//<ASUS_Proc+>
 #define ASUS_TOUCH_PROXIMITY_NODE	//<ASUS_Proximity+>
-//#define ASUS_TOUCH_DTP_WAKEUP	//<ASUS_DTP+>
+#define ASUS_TOUCH_DTP_WAKEUP	//<ASUS_DTP+>
 
 extern int Read_PROJ_ID(void);
 extern int Read_TP_ID(void);
