@@ -4069,15 +4069,15 @@ static int synaptics_rmi4_resume(struct device *dev)
 		rmi4_data->current_page = MASK_8BIT;
 	}
 
-	synaptics_rmi4_sensor_wake(rmi4_data);
-	synaptics_rmi4_irq_enable(rmi4_data, true);
-	retval = synaptics_rmi4_reinit_device(rmi4_data);
-	if (retval < 0) {
-		dev_err(rmi4_data->pdev->dev.parent,
-				"%s: Failed to reinit device\n",
-				__func__);
-		return retval;
-	}
+	//synaptics_rmi4_sensor_wake(rmi4_data);
+	//synaptics_rmi4_irq_enable(rmi4_data, true);
+	//retval = synaptics_rmi4_reinit_device(rmi4_data);
+	//if (retval < 0) {
+	//	dev_err(rmi4_data->pdev->dev.parent,
+	//			"%s: Failed to reinit device\n",
+	//			__func__);
+	//	return retval;
+	//}
 
 	mutex_lock(&exp_data.mutex);
 	if (!list_empty(&exp_data.list)) {

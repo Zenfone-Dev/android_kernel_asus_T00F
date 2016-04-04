@@ -124,6 +124,7 @@ struct sdhci_pci_chip {
 	unsigned int		enctrl1_orig;
 };
 
+extern int sd_power;   //<ASUS_BSP+>
 
 /*****************************************************************************\
  *                                                                           *
@@ -231,6 +232,7 @@ static irqreturn_t sdhci_pci_sd_cd(int irq, void *dev_id)
 	struct sdhci_pci_slot *slot = dev_id;
 	struct sdhci_host *host = slot->host;
 
+	sd_power = 1;   //<ASUS_BSP+>
 	mmc_detect_change(host->mmc, msecs_to_jiffies(200));
 	return IRQ_HANDLED;
 }
