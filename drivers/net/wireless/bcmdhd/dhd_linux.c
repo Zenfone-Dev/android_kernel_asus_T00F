@@ -3218,11 +3218,9 @@ exit:
 	DHD_OS_WAKE_UNLOCK(&dhd->pub);
 
 	if (ret && (dhd_open_retry_count <3)) {
-		dhd_msg_level = 0xFFFFFFFF;
 		dhd_open_retry_count++;
 		goto dhd_open_retry;
 	}
-	dhd_msg_level = DHD_ERROR_VAL;
 #if defined(MULTIPLE_SUPPLICANT)
 #if (LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 25)) && 1 && 1
 	mutex_unlock(&_dhd_sdio_mutex_lock_);

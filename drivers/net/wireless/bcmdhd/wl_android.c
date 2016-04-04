@@ -302,6 +302,38 @@ static int wl_android_get_rssi(struct net_device *net, char *command, int total_
 	return bytes_written;
 }
 
+static int
+dev_wlc_bufvar_set(struct net_device *dev, char *name, char *buf, int len)
+{
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 31)
+        char ioctlbuf_local[1024];
+#else
+        static char ioctlbuf_local[1024];
+#endif /* LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 31) */
+
+        bcm_mkiovar(name, buf, len, ioctlbuf_local, sizeof(ioctlbuf_local));
+
+        return (wldev_ioctl(dev, WLC_SET_VAR, ioctlbuf_local, sizeof(ioctlbuf_local), true));
+}
+
+static void btcflags0_setflag(struct net_device *dev, bool set)
+{
+        char buf_flag0_disable[8] = { 0, 00, 00, 00, 0x0, 0x0, 0x00, 0x00 };
+        char buf_flag0_default[8]   = { 0, 00, 00, 00, 0x1, 0x00, 0x00, 0x00 };
+
+        printk("BT scan set bt flags 0, set:%d\n", set);
+        if (set == TRUE)
+                /* Disable flag 0  */
+                dev_wlc_bufvar_set(dev, "btc_flags",
+                        (char *)&buf_flag0_disable[0],
+                        sizeof(buf_flag0_disable));
+        else
+                /* Restoring default bt flag7 */
+                dev_wlc_bufvar_set(dev, "btc_flags",
+                        (char *)&buf_flag0_default[0],
+                        sizeof(buf_flag0_default));
+}
+
 static int wl_android_set_suspendopt(struct net_device *dev, char *command, int total_len)
 {
 	int suspend_flag;
@@ -1281,9 +1313,11 @@ int wl_android_priv_cmd(struct net_device *net, struct ifreq *ifr, int cmd)
 #endif /* PKT_FILTER_SUPPORT */
 	else if (strnicmp(command, CMD_BTCOEXSCAN_START, strlen(CMD_BTCOEXSCAN_START)) == 0) {
 		/* TBD: BTCOEXSCAN-START */
+		btcflags0_setflag(net, TRUE);
 	}
 	else if (strnicmp(command, CMD_BTCOEXSCAN_STOP, strlen(CMD_BTCOEXSCAN_STOP)) == 0) {
 		/* TBD: BTCOEXSCAN-STOP */
+		btcflags0_setflag(net, FALSE);
 	}
 	else if (strnicmp(command, CMD_BTCOEXMODE, strlen(CMD_BTCOEXMODE)) == 0) {
 #ifdef WL_CFG80211
@@ -1862,6 +1896,7 @@ int wifi_set_power(int on, unsigned long msec)
 	if (wifi_regulator && !on)
 		ret = regulator_disable(wifi_regulator);
 
+        OSL_SLEEP(500);
 	if (msec && !ret)
 		OSL_SLEEP(msec);
 	return ret;

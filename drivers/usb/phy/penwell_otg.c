@@ -46,6 +46,7 @@
 #if defined(CONFIG_ME372CG_BATTERY_SMB345)
 extern int setSMB345Charger(int usb_state);
 #endif
+#include <linux/debugfs.h>
 #include <linux/usb/penwell_otg.h>
 #include <linux/notifier.h>
 
@@ -85,7 +86,7 @@ extern int setSMB347Charger(int usb_state);
 
 enum usb_charger_type usb_cable_status = CHRG_UNKNOWN;
 static BLOCKING_NOTIFIER_HEAD(cable_status_notifier_list);
-static u8 eye_diagram_value = 0x7b; //Eve_Wen
+static u8 eye_diagram_value = 0x7f; //Eve_Wen
 /**
  *	cable_status_register_client - register a client notifier
  *	@nb: notifier block to callback on events
@@ -5849,6 +5850,9 @@ static int __init penwell_otg_init(void)
 {
 #ifdef	CONFIG_DEBUG_FS
 	pm_sss0_base = ioremap_nocache(0xFF11D030, 0x100);
+	if (!debugfs_create_x8("usb_eye_diagram", S_IRUGO | S_IWUSR, NULL,&eye_diagram_value)) 
+                pr_err("create usb_eye_diagram node FAIL\n");
+
 #endif
 	return pci_register_driver(&otg_pci_driver);
 }

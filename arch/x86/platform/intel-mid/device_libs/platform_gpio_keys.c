@@ -41,7 +41,7 @@ static struct gpio_keys_button gpio_button[] = {
 	{KEY_PROG1,		-1, 1, "prog_btn1",	EV_KEY, 0, 20},
 	{KEY_PROG2,		-1, 1, "prog_btn2",	EV_KEY, 0, 20},
 	{SW_LID,		-1, 1, "lid_switch",	EV_SW,  0, 20},
-	{KEY_VOLUMEUP,		-1, 1, "vol_up",	EV_KEY, 0, 20},
+	{KEY_VOLUMEUP,		-1, 1, "vol_up",	EV_KEY, 1, 20},
 	{KEY_VOLUMEDOWN,	-1, 1, "vol_down",	EV_KEY, 0, 20},
 	{KEY_CAMERA,		-1, 1, "camera_full",	EV_KEY, 0, 20},
 	{KEY_CAMERA_FOCUS,	-1, 1, "camera_half",	EV_KEY, 0, 20},

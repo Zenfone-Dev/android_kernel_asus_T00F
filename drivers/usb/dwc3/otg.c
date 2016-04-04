@@ -72,6 +72,7 @@
 #include "otg.h"
 
 #define VERSION "2.10a"
+#define DWC3_DMA_64BIT 1
 
 struct dwc3_otg_hw_ops *dwc3_otg_pdata;
 struct dwc_device_par *platform_par;
@@ -1291,13 +1292,30 @@ err1:
 static int dwc_otg_probe(struct pci_dev *pdev,
 			const struct pci_device_id *id)
 {
-	int retval = 0;
+	int retval = 0, dma_mask;
 	struct resource		res[2];
 	struct dwc_otg2 *otg = NULL;
 	unsigned long resource, len;
+	struct device		*dev = &pdev->dev;
 
 	if (!dwc3_otg_pdata)
 		return -ENODEV;
+
+	if (id->driver_data & DWC3_DMA_64BIT)
+		dma_mask = 64;
+	else
+		dma_mask = 32;
+
+	retval = pci_set_dma_mask(pdev, DMA_BIT_MASK(dma_mask));
+	if (retval < 0) {
+		dev_err(dev, "failed to set 64-bit DMA mask\n");
+		return retval;
+	}
+	retval = pci_set_consistent_dma_mask(pdev, DMA_BIT_MASK(dma_mask));
+	if (retval < 0) {
+		dev_err(dev, "failed to set 64-bit consistent DMA mask\n");
+		return retval;
+	}
 
 	if (pci_enable_device(pdev) < 0) {
 		dev_err(&pdev->dev, "pci device enable failed\n");
@@ -1472,7 +1490,7 @@ static DEFINE_PCI_DEVICE_TABLE(pci_ids) = {
 		.vendor = PCI_VENDOR_ID_INTEL,
 		.device = PCI_DEVICE_ID_DWC_VLV,
 	},
-	{PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_DWC_CHT)},
+	{PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_DWC_CHT)}
 	{ /* end: all zeroes */ }
 };
 

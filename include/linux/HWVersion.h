@@ -8,6 +8,7 @@
 #define LCD_ID_TM	0
 #define LCD_ID_CTC	0
 #define LCD_ID_HSD	1
+#define LCD_ID_CTC      0
 
 #define A502CG_LCD_ID_GIS				0
 #define A502CG_LCD_ID_TM				1
