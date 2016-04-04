@@ -2009,6 +2009,7 @@ PVRSRV_ERROR SysReleaseSystemData(IMG_HANDLE hSysData)
 
 #if defined(SUPPORT_SYSTEM_INTERRUPT_HANDLING)
 PVRSRV_ERROR SysInstallDeviceLISR(IMG_UINT32 ui32IRQ,
+				  IMG_BOOL bShared,
 				  IMG_CHAR *pszName,
 				  PFN_LISR pfnLISR,
 				  IMG_PVOID pvData,
@@ -2017,6 +2018,8 @@ PVRSRV_ERROR SysInstallDeviceLISR(IMG_UINT32 ui32IRQ,
 	PVRSRV_DEVICE_CONFIG *psDevice = &gsSysConfig.pasDevices[0];
 	SYS_DATA *psSysData = (SYS_DATA *)psDevice->hSysData;
 	IMG_UINT32 ui32InterruptFlag;
+
+	PVR_ASSERT(psDevice->bIRQIsShared == bShared);
 
 	switch (ui32IRQ)
 	{

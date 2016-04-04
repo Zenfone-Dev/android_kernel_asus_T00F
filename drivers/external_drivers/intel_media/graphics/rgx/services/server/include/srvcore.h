@@ -178,8 +178,7 @@ IMG_INT BridgedDispatchKM(CONNECTION_DATA * psConnection,
 
 
 PVRSRV_ERROR
-PVRSRVConnectKM(CONNECTION_DATA *psConnection,
-				IMG_UINT32 ui32Flags,
+PVRSRVConnectKM(IMG_UINT32 ui32Flags,
 				IMG_UINT32 ui32ClientBuildOptions,
 				IMG_UINT32 ui32ClientDDKVersion,
 				IMG_UINT32 ui32ClientDDKBuild,
@@ -188,6 +187,9 @@ PVRSRVConnectKM(CONNECTION_DATA *psConnection,
 
 PVRSRV_ERROR
 PVRSRVDisconnectKM(IMG_VOID);
+
+PVRSRV_ERROR
+PVRSRVInitSrvConnectKM(CONNECTION_DATA *psConnection);
 
 PVRSRV_ERROR
 PVRSRVInitSrvDisconnectKM(CONNECTION_DATA *psConnection,

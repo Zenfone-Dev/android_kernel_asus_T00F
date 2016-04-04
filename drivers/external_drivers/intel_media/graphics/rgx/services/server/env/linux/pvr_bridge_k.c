@@ -459,17 +459,11 @@ PVRSRV_BridgeDispatchKM(struct file *pFile, unsigned int unref__ ioctlCmd, unsig
 	PVRSRV_BRIDGE_PACKAGE sBridgePackageKM;
 #endif
 	PVRSRV_BRIDGE_PACKAGE *psBridgePackageKM;
-	CONNECTION_DATA *psConnection;
+	CONNECTION_DATA *psConnection = LinuxConnectionFromFile(pFile);
 	IMG_INT err = -EFAULT;
 
 	OSAcquireBridgeLock();
 
-	psConnection = LinuxConnectionFromFile(pFile);
-	if (psConnection == IMG_NULL) {
-		PVR_DPF((PVR_DBG_ERROR, "%s: Connection is closed", __FUNCTION__));
-		OSReleaseBridgeLock();
-		return err;
-	}
 #if defined(SUPPORT_DRM)
 	PVR_UNREFERENCED_PARAMETER(dev);
 
@@ -548,26 +542,16 @@ PVRSRV_BridgeCompatDispatchKM(struct file *pFile,
 	PVRSRV_BRIDGE_PACKAGE params_for_64;
 	struct bridge_package_from_32 params;
  	struct bridge_package_from_32 * const params_addr = &params;
-#if defined(SUPPORT_DRM)
-	struct drm_file *file_priv;
+#if !defined(SUPPORT_DRM)
+	CONNECTION_DATA *psConnection = LinuxConnectionFromFile(pFile);
+#else
+	struct drm_file *file_priv = pFile->private_data;
+	CONNECTION_DATA *psConnection = LinuxConnectionFromFile(file_priv);
 #endif
-	CONNECTION_DATA *psConnection;
-
 	// make sure there is no padding inserted by compiler
 	PVR_ASSERT(sizeof(struct bridge_package_from_32) == 6 * sizeof(IMG_UINT32));
 
 	OSAcquireBridgeLock();
-
-#if !defined(SUPPORT_DRM)
-	psConnection = LinuxConnectionFromFile(pFile);
-#else
-	file_priv = pFile->private_data;
-	psConnection = LinuxConnectionFromFile(file_priv);
-#endif
-	if (psConnection == IMG_NULL) {
-		PVR_DPF((PVR_DBG_ERROR, "%s: Connection is closed", __FUNCTION__));
-		goto unlock_and_return;
-	}
 
 	if(!OSAccessOK(PVR_VERIFY_READ, (void *) arg,
 				   sizeof(struct bridge_package_from_32)))

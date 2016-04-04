@@ -88,7 +88,7 @@ MODULE_PARM_DESC(defer_fw_load,
 		"Defer FW loading until device is opened (default:disable)");
 
 /* cross componnet debug message flag */
-int dbg_level;
+int dbg_level = 0;
 module_param(dbg_level, int, 0644);
 MODULE_PARM_DESC(dbg_level, "debug message on/off (default:off)");
 
@@ -356,24 +356,9 @@ done:
 	return 0;
 }
 
-
-/*WA for DDR DVFS enable/disable*/
-void punit_ddr_dvfs_enable(bool enable)
-{
-	int reg = intel_mid_msgbus_read32(PUNIT_PORT, MRFLD_ISPSSDVFS);
-
-	if (enable) {
-		reg &= ~(MRFLD_BIT0 | MRFLD_BIT1);
-	} else {
-		reg |= (MRFLD_BIT0);
-		reg &= ~(MRFLD_BIT1);
-	}
-
-	intel_mid_msgbus_write32(PUNIT_PORT, MRFLD_ISPSSDVFS, reg);
-}
-
+#ifdef CONFIG_GMIN_INTEL_MID
 /* Workaround for pmu_nc_set_power_state not ready in MRFLD */
-int atomisp_mrfld_power_down(struct atomisp_device *isp)
+static int atomisp_mrfld_power_down(struct atomisp_device *isp)
 {
 	unsigned long timeout;
 	u32 reg_value;
@@ -383,9 +368,6 @@ int atomisp_mrfld_power_down(struct atomisp_device *isp)
 	reg_value &= ~MRFLD_ISPSSPM0_ISPSSC_MASK;
 	reg_value |= MRFLD_ISPSSPM0_IUNIT_POWER_OFF;
 	intel_mid_msgbus_write32(PUNIT_PORT, MRFLD_ISPSSPM0, reg_value);
-
-	/*WA:Enable DVFS*/
-	punit_ddr_dvfs_enable(true);
 
 	/*
 	 * There should be no iunit access while power-down is
@@ -414,14 +396,10 @@ int atomisp_mrfld_power_down(struct atomisp_device *isp)
 
 
 /* Workaround for pmu_nc_set_power_state not ready in MRFLD */
-int atomisp_mrfld_power_up(struct atomisp_device *isp)
+static int atomisp_mrfld_power_up(struct atomisp_device *isp)
 {
 	unsigned long timeout;
 	u32 reg_value;
-
-	/*WA for PUNIT, if DVFS enabled, ISP timeout observed*/
-	punit_ddr_dvfs_enable(false);
-	msleep(20);
 
 	/* writing 0x0 to ISPSSPM0 bit[1:0] to power off the IUNIT */
 	reg_value = intel_mid_msgbus_read32(PUNIT_PORT, MRFLD_ISPSSPM0);
@@ -447,8 +425,9 @@ int atomisp_mrfld_power_up(struct atomisp_device *isp)
 		usleep_range(100, 150);
 	};
 }
+#endif
 
-int atomisp_runtime_suspend(struct device *dev)
+static int atomisp_runtime_suspend(struct device *dev)
 {
 	struct atomisp_device *isp = (struct atomisp_device *)
 		dev_get_drvdata(dev);
@@ -471,7 +450,7 @@ int atomisp_runtime_suspend(struct device *dev)
 	return ret;
 }
 
-int atomisp_runtime_resume(struct device *dev)
+static int atomisp_runtime_resume(struct device *dev)
 {
 	struct atomisp_device *isp = (struct atomisp_device *)
 		dev_get_drvdata(dev);
@@ -612,9 +591,8 @@ static int atomisp_csi_lane_config(struct atomisp_device *isp)
 	u32 port_config_mask;
 	int port3_lanes_shift;
 
-	if (isp->media_dev.hw_revision <
-		ATOMISP_HW_REVISION_ISP2401_LEGACY <<
-		ATOMISP_HW_REVISION_SHIFT) {
+ 	if (isp->media_dev.hw_revision <
+	    ATOMISP_HW_REVISION_ISP2401_LEGACY << ATOMISP_HW_REVISION_SHIFT) {
 		/* Merrifield */
 		port_config_mask = MRFLD_PORT_CONFIG_MASK;
 		port3_lanes_shift = MRFLD_PORT3_LANES_SHIFT;
@@ -625,8 +603,7 @@ static int atomisp_csi_lane_config(struct atomisp_device *isp)
 	}
 
 	if (isp->media_dev.hw_revision <
-		ATOMISP_HW_REVISION_ISP2401 <<
-		ATOMISP_HW_REVISION_SHIFT) {
+	    ATOMISP_HW_REVISION_ISP2401 << ATOMISP_HW_REVISION_SHIFT) {
 		/* Merrifield / Moorefield legacy input system */
 		nportconfigs = MRFLD_PORT_CONFIG_NUM;
 	} else {
@@ -780,7 +757,7 @@ static int atomisp_subdev_probe(struct atomisp_device *isp)
 			 * pixel_format.
 			 */
 			isp->inputs[isp->input_cnt].frame_size.pixel_format = 0;
-			sensor_pdata = (struct camera_sensor_platform_data *)
+			sensor_pdata = (struct camera_sensor_platform_data*)
 					board_info->platform_data;
 			if (sensor_pdata->get_camera_caps)
 				isp->inputs[isp->input_cnt].camera_caps =
@@ -1146,33 +1123,13 @@ static bool is_valid_device(struct pci_dev *dev,
 #endif /* ISP2400 */
 }
 
-static int init_atomisp_wdts(struct atomisp_device *isp)
-{
-	int i, err;
-
-	atomic_set(&isp->wdt_work_queued, 0);
-	isp->wdt_work_queue = alloc_workqueue(isp->v4l2_dev.name, 0, 1);
-	if (isp->wdt_work_queue == NULL) {
-		dev_err(isp->dev, "Failed to initialize wdt work queue\n");
-		err = -ENOMEM;
-		goto alloc_fail;
-	}
-	INIT_WORK(&isp->wdt_work, atomisp_wdt_work);
-
-	for (i = 0; i < isp->num_of_streams; i++) {
-		struct atomisp_sub_device *asd = &isp->asd[i];
-		asd = &isp->asd[i];
-		setup_timer(&asd->wdt, atomisp_wdt, (unsigned long)isp);
-	}
-	return 0;
-alloc_fail:
-	return err;
-}
-
 static struct pci_driver atomisp_pci_driver;
 
 #define ATOM_ISP_PCI_BAR	0
 
+#ifdef CONFIG_GMIN_INTEL_MID
+extern int atomisp_punit_hpll_freq; /* atomisp_cmd.c */
+#endif
 static int atomisp_pci_probe(struct pci_dev *dev,
 				       const struct pci_device_id *id)
 {
@@ -1202,8 +1159,9 @@ static int atomisp_pci_probe(struct pci_dev *dev,
 	atomisp_dev = &dev->dev;
 
 	pdata = atomisp_get_platform_data();
-	if (pdata == NULL)
+	if (pdata == NULL) {
 		dev_warn(&dev->dev, "no platform data available\n");
+	}
 
 	err = pcim_enable_device(dev);
 	if (err) {
@@ -1248,9 +1206,6 @@ static int atomisp_pci_probe(struct pci_dev *dev,
 	mutex_init(&isp->streamoff_mutex);
 	spin_lock_init(&isp->lock);
 
-	/* This is not a true PCI device on SoC, so the delay is not needed. */
-	isp->pdev->d3_delay = 0;
-
 	isp->media_dev.driver_version = ATOMISP_CSS_VERSION_21;
 	switch (id->device & ATOMISP_PCI_DEVICE_SOC_MASK) {
 	case ATOMISP_PCI_DEVICE_SOC_MRFLD:
@@ -1260,15 +1215,15 @@ static int atomisp_pci_probe(struct pci_dev *dev,
 			ATOMISP_HW_STEPPING_B0;
 
 		switch (id->device) {
-		case ATOMISP_PCI_DEVICE_SOC_MRFLD_1179:
-			isp->dfs = &dfs_config_merr_1179;
-			break;
-		case ATOMISP_PCI_DEVICE_SOC_MRFLD_117A:
-			isp->dfs = &dfs_config_merr_117a;
-			break;
-		default:
-			isp->dfs = &dfs_config_merr;
-			break;
+			case ATOMISP_PCI_DEVICE_SOC_MRFLD_1179:
+				isp->dfs = &dfs_config_merr_1179;
+				break;
+			case ATOMISP_PCI_DEVICE_SOC_MRFLD_117A:
+				isp->dfs = &dfs_config_merr_117a;
+				break;
+			default:
+				isp->dfs = &dfs_config_merr;
+				break;
 		}
 		break;
 	case ATOMISP_PCI_DEVICE_SOC_BYT:
@@ -1345,6 +1300,14 @@ static int atomisp_pci_probe(struct pci_dev *dev,
 		}
 	}
 
+	isp->wdt_work_queue = alloc_workqueue(isp->v4l2_dev.name, 0, 1);
+	if (isp->wdt_work_queue == NULL) {
+		dev_err(&dev->dev, "Failed to initialize wdt work queue\n");
+		err = -ENOMEM;
+		goto wdt_work_queue_fail;
+	}
+	INIT_WORK(&isp->wdt_work, atomisp_wdt_work);
+
 	pci_set_master(dev);
 	pci_set_drvdata(dev, isp);
 
@@ -1353,6 +1316,8 @@ static int atomisp_pci_probe(struct pci_dev *dev,
 		dev_err(&dev->dev, "Failed to enable msi (%d)\n", err);
 		goto enable_msi_fail;
 	}
+
+	setup_timer(&isp->wdt, atomisp_wdt, (unsigned long)isp);
 
 	atomisp_msi_irq_init(isp, dev);
 
@@ -1408,10 +1373,6 @@ static int atomisp_pci_probe(struct pci_dev *dev,
 	}
 	atomisp_acc_init(isp);
 
-	/* init atomisp wdts */
-	if (init_atomisp_wdts(isp) != 0)
-		goto wdt_work_queue_fail;
-
 	/* save the iunit context only once after all the values are init'ed. */
 	atomisp_save_iunit_reg(isp);
 
@@ -1461,8 +1422,6 @@ request_irq_fail:
 	hrt_isp_css_mm_clear();
 	hmm_pool_unregister(HMM_POOL_TYPE_RESERVED);
 hmm_pool_fail:
-	destroy_workqueue(isp->wdt_work_queue);
-wdt_work_queue_fail:
 	atomisp_acc_cleanup(isp);
 	atomisp_unregister_entities(isp);
 register_entities_fail:
@@ -1471,6 +1430,8 @@ initialize_modules_fail:
 	pm_qos_remove_request(&isp->pm_qos);
 	atomisp_msi_irq_uninit(isp, dev);
 enable_msi_fail:
+	destroy_workqueue(isp->wdt_work_queue);
+wdt_work_queue_fail:
 fw_validation_fail:
 	release_firmware(isp->firmware);
 load_fw_fail:

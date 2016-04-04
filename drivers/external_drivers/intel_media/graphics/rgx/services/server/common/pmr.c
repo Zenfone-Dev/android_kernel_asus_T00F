@@ -259,34 +259,6 @@ struct _PMR_PAGELIST_
 	struct _PMR_ *psReferencePMR;
 };
 
-/*
- * This Lock is used to protect the sequence of operation used in MMapPMR and in
- * the memory management bridge. This should make possible avoid the use of the bridge
- * lock in mmap.c avoiding regressions.
- */
-POS_LOCK gGlobalLookupPMRLock;
-
-IMG_VOID PMRLock()
-{
-	OSLockAcquire(gGlobalLookupPMRLock);
-}
-
-IMG_VOID PMRUnlock()
-{
-	OSLockRelease(gGlobalLookupPMRLock);
-}
-
-IMG_BOOL PMRIsLocked(void)
-{
-	return OSLockIsLocked(gGlobalLookupPMRLock);
-}
-
-
-IMG_BOOL PMRIsLockedByMe(void)
-{
-	return OSLockIsLockedByMe(gGlobalLookupPMRLock);
-}
-
 #define MIN3(a,b,c)	(((a) < (b)) ? (((a) < (c)) ? (a):(c)) : (((b) < (c)) ? (b):(c)))
 
 static PVRSRV_ERROR
@@ -823,11 +795,6 @@ PVRSRV_ERROR PMRSecureExportPMR(CONNECTION_DATA *psConnection,
 {
 	PVRSRV_ERROR eError;
 
-	/* We are acquiring reference to PMR here because OSSecureExport
-	 * releases bridge lock and PMR lock for a moment and we don't want PMR
-	 * to be removed by other thread in the meantime. */
-	_Ref(psPMR);
-
 	eError = OSSecureExport(psConnection,
 							(IMG_PVOID) psPMR,
 							phSecure,
@@ -838,13 +805,15 @@ PVRSRV_ERROR PMRSecureExportPMR(CONNECTION_DATA *psConnection,
 		goto e0;
 	}
 
+	/* Make sure the PMR won't get freed before it's imported */
+	_Ref(psPMR);
+
 	/* Pass back the PMR for resman */
 	*ppsPMR = psPMR;
 
 	return PVRSRV_OK;
 e0:
 	PVR_ASSERT(eError != PVRSRV_OK);
-	_UnrefAndMaybeDestroy(psPMR);
 	return eError;
 }
 
@@ -2540,12 +2509,6 @@ PMRInit()
 		return eError;
 	}
 
-	eError = OSLockCreate(&gGlobalLookupPMRLock, LOCK_TYPE_PASSIVE);
-	if (eError != PVRSRV_OK)
-	{
-		return eError;
-	}
-
     _gsSingletonPMRContext.uiNextSerialNum = 1;
 
     _gsSingletonPMRContext.uiNextKey = 0x8300f001 * (IMG_UINTPTR_T)&_gsSingletonPMRContext;
@@ -2583,7 +2546,6 @@ PMRDeInit()
     }
 
 	OSLockDestroy(_gsSingletonPMRContext.hLock);
-	OSLockDestroy(gGlobalLookupPMRLock);
 
     _gsSingletonPMRContext.bModuleInitialised = IMG_FALSE;
 

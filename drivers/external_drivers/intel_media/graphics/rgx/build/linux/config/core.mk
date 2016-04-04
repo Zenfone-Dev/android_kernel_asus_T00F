@@ -297,10 +297,12 @@ ifeq ($(SUPPORT_LINUX_USING_WORKQUEUES),1)
 override PVR_LINUX_USING_WORKQUEUES := 1
 override PVR_LINUX_MISR_USING_PRIVATE_WORKQUEUE := 1
 override PVR_LINUX_TIMERS_USING_WORKQUEUES := 1
+override SYS_CUSTOM_POWERLOCK_WRAP := 1
 else ifeq ($(SUPPORT_LINUX_USING_SHARED_WORKQUEUES),1)
 override PVR_LINUX_USING_WORKQUEUES := 1
 override PVR_LINUX_MISR_USING_WORKQUEUE := 1
 override PVR_LINUX_TIMERS_USING_SHARED_WORKQUEUE := 1
+override SYS_CUSTOM_POWERLOCK_WRAP := 1
 endif
 
 ifeq ($(NO_HARDWARE),1)
@@ -531,9 +533,6 @@ ifeq ($(DONT_NEED_RGX_BVNC),)
     $(eval $(call TunableBothConfigC,RGX_BNC_CONFIG_KM_HEADER,))
    endif
 
-# Force the alignment in services/include/rgx_fwif_shared.h
-$(eval $(call TunableBothConfigC,FORCE_UNCACHED_ALIGN,))
-
 $(eval $(call TunableBothConfigC,SUPPORT_DBGDRV_EVENT_OBJECTS,1))
 $(eval $(call TunableBothConfigC,PVR_DBG_BREAK_ASSERT_FAIL,,\
 Enable this to treat PVR_DBG_BREAK as PVR_ASSERT(0)._\
@@ -579,7 +578,6 @@ $(eval $(call TunableBothConfigC,SUPPORT_TRUSTED_DEVICE,))
 $(eval $(call TunableBothConfigC,TRUSTED_DEVICE_DEFAULT_ENABLED,))
 $(eval $(call TunableBothConfigC,SUPPORT_EXPORTING_MEMORY_CONTEXT,))
 $(eval $(call TunableBothConfigC,SUPPORT_USER_REGISTER_CONFIGURATION,))
-$(eval $(call TunableBothConfigC,FIX_DUSTS_POW_ON_INIT,))
 
 $(eval $(call TunableKernelConfigC,DEBUG_HANDLEALLOC_INFO_KM,))
 $(eval $(call TunableKernelConfigC,SUPPORT_LINUX_X86_WRITECOMBINE,1))
@@ -615,7 +613,6 @@ because it is not specific to one single device._\
 ))
 
 $(eval $(call TunableBothConfigC,SUPPORT_PVR_VALGRIND,))
-
 
 
 

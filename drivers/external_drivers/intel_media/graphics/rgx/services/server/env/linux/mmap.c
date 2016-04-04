@@ -192,12 +192,13 @@ int MMapPMR(struct file *pFile, struct vm_area_struct *ps_vma)
 	IMG_BOOL bMixedMap = IMG_FALSE;
 #endif
 	/*
-	 * The pmr lock used here to protect both handle related operations and PMR
-	 * operations.
-	 * This was introduced to fix lockdep issue.
+	 * The bridge lock used here to protect Both PVRSRVLookupHandle and ResManFindPrivateDataByPtr
+	 * is replaced by a specific lock considering that the handle functions have now their own lock
+	 * and ResManFindPrivateDataByPtr is going to be removed.
+	 *  This change was necessary to solve the lockdep issues related with the MMapPMR
 	 */
+	OSAcquireBridgeLock();
 	mutex_lock(&g_sMMapMutex);
-	PMRLock();
 
 #if defined(SUPPORT_DRM_DC_MODULE)
 	psPMR = PVRSRVGEMMMapLookupPMR(pFile, ps_vma);
@@ -229,7 +230,7 @@ int MMapPMR(struct file *pFile, struct vm_area_struct *ps_vma)
 	 */
 	PMRRefPMR(psPMR);
 
-	PMRUnlock();
+	OSReleaseBridgeLock();
 
 	eError = PMRLockSysPhysAddresses(psPMR, PAGE_SHIFT);
 	if (eError != PVRSRV_OK)
@@ -456,7 +457,7 @@ int MMapPMR(struct file *pFile, struct vm_area_struct *ps_vma)
 	goto em1;
  e0:
     PVR_DPF((PVR_DBG_ERROR, "Error in MMapPMR critical section"));
-	PMRUnlock();
+	OSReleaseBridgeLock();
  em1:
     PVR_ASSERT(eError != PVRSRV_OK);
     PVR_DPF((PVR_DBG_ERROR, "unable to translate error %d", eError));

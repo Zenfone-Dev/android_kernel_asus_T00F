@@ -800,9 +800,9 @@ static int power_up(struct v4l2_subdev *sd)
 	return 0;
 
 fail_clk:
-	gpio_ctrl(sd, 0);
+	dev->platform_data->gpio_ctrl(sd, 0);
 fail_power:
-	power_ctrl(sd, 0);
+	dev->platform_data->power_ctrl(sd, 0);
 	dev_err(&client->dev, "sensor power-up failed\n");
 
 	return ret;

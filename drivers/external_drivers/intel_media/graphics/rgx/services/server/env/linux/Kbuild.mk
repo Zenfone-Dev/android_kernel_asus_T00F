@@ -313,8 +313,8 @@ ccflags-y += -I$(bridge_base)/dmabuf_bridge
 endif
 
 ifeq ($(PVR_ANDROID_NATIVE_WINDOW_HAS_SYNC),1)
-ccflags-y += -I$(TOP)/kernel/drivers/staging/imgtec
-pvrsrvkm-y += kernel/drivers/staging/imgtec/pvr_sync.o
+pvrsrvkm-y += \
+ services/server/env/linux/pvr_sync.o
 endif
 
 pvrsrvkm-y += \

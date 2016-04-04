@@ -45,7 +45,7 @@ sh_css_rx_enable_all_interrupts(void)
 		(1U << _HRT_CSS_RECEIVER_IRQ_ERR_CONTROL_BIT) |
 		(1U << _HRT_CSS_RECEIVER_IRQ_ERR_ECC_DOUBLE_BIT) |
 		(1U << _HRT_CSS_RECEIVER_IRQ_ERR_ECC_CORRECTED_BIT) |
-/*		(1U << _HRT_CSS_RECEIVER_IRQ_ERR_ECC_NO_CORRECTION_BIT) | */
+		(1U << _HRT_CSS_RECEIVER_IRQ_ERR_ECC_NO_CORRECTION_BIT) |
 		(1U << _HRT_CSS_RECEIVER_IRQ_ERR_CRC_BIT) |
 		(1U << _HRT_CSS_RECEIVER_IRQ_ERR_ID_BIT) |
 		(1U << _HRT_CSS_RECEIVER_IRQ_ERR_FRAME_SYNC_BIT) |
@@ -107,6 +107,8 @@ sh_css_rx_get_interrupt_info(unsigned int *irq_infos)
 		infos |= SH_CSS_RX_IRQ_INFO_ERR_UNKNOWN_ESC;
 	if (bits & (1U << _HRT_CSS_RECEIVER_IRQ_ERR_LINE_SYNC_BIT))
 		infos |= SH_CSS_RX_IRQ_INFO_ERR_LINE_SYNC;
+	if (bits & (1U << _HRT_CSS_RECEIVER_IRQ_ERR_ECC_NO_CORRECTION_BIT))
+	        infos |= SH_CSS_RX_IRQ_INFO_ERR_ECC_NO_ERR;
 
 	*irq_infos = infos;
 }
@@ -152,9 +154,60 @@ sh_css_rx_clear_interrupt_info(unsigned int irq_infos)
 		bits |= 1U << _HRT_CSS_RECEIVER_IRQ_ERR_ESCAPE_BIT;
 	if (irq_infos & SH_CSS_RX_IRQ_INFO_ERR_LINE_SYNC)
 		bits |= 1U << _HRT_CSS_RECEIVER_IRQ_ERR_LINE_SYNC_BIT;
+	if (irq_infos & SH_CSS_RX_IRQ_INFO_ERR_ECC_NO_ERR)
+	        bits |= 1U << _HRT_CSS_RECEIVER_IRQ_ERR_ECC_NO_CORRECTION_BIT;
 
 	receiver_port_reg_store(RX0_ID,
 		MIPI_PORT1_ID, _HRT_CSS_RECEIVER_IRQ_ENABLE_REG_IDX, bits);
+return;
+}
+
+void
+sh_css_rx_clear_interrupt_status(unsigned int irq_infos)
+{
+	hrt_data	bits = receiver_port_reg_load(RX0_ID,
+		MIPI_PORT1_ID, _HRT_CSS_RECEIVER_IRQ_STATUS_REG_IDX);
+
+/* MW: Why do we remap the receiver bitmap */
+	if (irq_infos & SH_CSS_RX_IRQ_INFO_BUFFER_OVERRUN)
+		bits |= 1U << _HRT_CSS_RECEIVER_IRQ_OVERRUN_BIT;
+#if defined(HAS_RX_VERSION_2)
+	if (irq_infos & SH_CSS_RX_IRQ_INFO_INIT_TIMEOUT)
+		bits |= 1U << _HRT_CSS_RECEIVER_IRQ_INIT_TIMEOUT_BIT;
+#endif
+	if (irq_infos & SH_CSS_RX_IRQ_INFO_ENTER_SLEEP_MODE)
+		bits |= 1U << _HRT_CSS_RECEIVER_IRQ_SLEEP_MODE_ENTRY_BIT;
+	if (irq_infos & SH_CSS_RX_IRQ_INFO_EXIT_SLEEP_MODE)
+		bits |= 1U << _HRT_CSS_RECEIVER_IRQ_SLEEP_MODE_EXIT_BIT;
+	if (irq_infos & SH_CSS_RX_IRQ_INFO_ECC_CORRECTED)
+		bits |= 1U << _HRT_CSS_RECEIVER_IRQ_ERR_ECC_CORRECTED_BIT;
+	if (irq_infos & SH_CSS_RX_IRQ_INFO_ERR_SOT)
+		bits |= 1U << _HRT_CSS_RECEIVER_IRQ_ERR_SOT_HS_BIT;
+	if (irq_infos & SH_CSS_RX_IRQ_INFO_ERR_SOT_SYNC)
+		bits |= 1U << _HRT_CSS_RECEIVER_IRQ_ERR_SOT_SYNC_HS_BIT;
+	if (irq_infos & SH_CSS_RX_IRQ_INFO_ERR_CONTROL)
+		bits |= 1U << _HRT_CSS_RECEIVER_IRQ_ERR_CONTROL_BIT;
+	if (irq_infos & SH_CSS_RX_IRQ_INFO_ERR_ECC_DOUBLE)
+		bits |= 1U << _HRT_CSS_RECEIVER_IRQ_ERR_ECC_DOUBLE_BIT;
+	if (irq_infos & SH_CSS_RX_IRQ_INFO_ERR_CRC)
+		bits |= 1U << _HRT_CSS_RECEIVER_IRQ_ERR_CRC_BIT;
+	if (irq_infos & SH_CSS_RX_IRQ_INFO_ERR_UNKNOWN_ID)
+		bits |= 1U << _HRT_CSS_RECEIVER_IRQ_ERR_ID_BIT;
+	if (irq_infos & SH_CSS_RX_IRQ_INFO_ERR_FRAME_SYNC)
+		bits |= 1U << _HRT_CSS_RECEIVER_IRQ_ERR_FRAME_SYNC_BIT;
+	if (irq_infos & SH_CSS_RX_IRQ_INFO_ERR_FRAME_DATA)
+		bits |= 1U << _HRT_CSS_RECEIVER_IRQ_ERR_FRAME_DATA_BIT;
+	if (irq_infos & SH_CSS_RX_IRQ_INFO_ERR_DATA_TIMEOUT)
+		bits |= 1U << _HRT_CSS_RECEIVER_IRQ_DATA_TIMEOUT_BIT;
+	if (irq_infos & SH_CSS_RX_IRQ_INFO_ERR_UNKNOWN_ESC)
+		bits |= 1U << _HRT_CSS_RECEIVER_IRQ_ERR_ESCAPE_BIT;
+	if (irq_infos & SH_CSS_RX_IRQ_INFO_ERR_LINE_SYNC)
+		bits |= 1U << _HRT_CSS_RECEIVER_IRQ_ERR_LINE_SYNC_BIT;
+	if (irq_infos & SH_CSS_RX_IRQ_INFO_ERR_ECC_NO_ERR)
+		bits |= 1U << _HRT_CSS_RECEIVER_IRQ_ERR_ECC_NO_CORRECTION_BIT;
+
+	receiver_port_reg_store(RX0_ID,
+		MIPI_PORT1_ID, _HRT_CSS_RECEIVER_IRQ_STATUS_REG_IDX, bits);
 return;
 }
 

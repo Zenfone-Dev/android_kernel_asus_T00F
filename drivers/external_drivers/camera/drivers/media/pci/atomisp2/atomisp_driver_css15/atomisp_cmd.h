@@ -211,6 +211,12 @@ int atomisp_param(struct atomisp_sub_device *asd, int flag,
 		  struct atomisp_parm *config);
 
 /*
+ * Function to set isp extended parameters to isp
+ */
+int atomisp_param_ext(struct atomisp_sub_device *asd,
+		  struct atomisp_ext_parameters *config);
+
+/*
  * Function to configure color effect of the image
  */
 int atomisp_color_effect(struct atomisp_sub_device *asd, int flag,
@@ -330,4 +336,7 @@ void atomisp_buf_done(struct atomisp_sub_device *asd, int error,
 void atomisp_css_flush(struct atomisp_device *isp);
 int atomisp_source_pad_to_stream_id(struct atomisp_sub_device *asd,
 					   uint16_t source_pad);
+
+int atomisp_css_rx_err_ecc_no_err_check(struct atomisp_device *isp) ;
+
 #endif /* __ATOMISP_CMD_H__ */

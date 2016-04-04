@@ -1192,8 +1192,7 @@ struct csc_setting {
 		int64_t csc_data[CSC_COUNT];
 	} data;
 };
-#define GAMMA_10_BIT_TABLE_COUNT        129
-
+#define GAMMA_10_BIT_TABLE_COUNT  132
 struct gamma_setting {
 	uint32_t pipe;
 	setting_type type;

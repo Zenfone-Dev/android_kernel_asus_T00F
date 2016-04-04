@@ -109,8 +109,6 @@ static IMG_BOOL g_bDevInit2Done = IMG_FALSE;
 static IMG_VOID RGX_DeInitHeaps(DEVICE_MEMORY_INFO *psDevMemoryInfo);
 
 IMG_UINT32 g_ui32HostSampleIRQCount = 0;
-volatile IMG_UINT32 g_flagIgnore = 0;
-
 
 IMG_BOOL gbSystemActivePMEnabled = IMG_FALSE;
 IMG_BOOL gbSystemActivePMInit = IMG_FALSE;
@@ -128,15 +126,12 @@ static IMG_BOOL RGX_LISRHandler (IMG_VOID *pvData)
 	IMG_UINT32 ui32IRQStatus;
 	IMG_BOOL bInterruptProcessed = IMG_FALSE;
 
+	if (!ospm_power_is_hw_on(OSPM_GRAPHICS_ISLAND))
+		return bInterruptProcessed;
+
 	psDeviceNode = pvData;
 	psDevConfig = psDeviceNode->psDevConfig;
 	psDevInfo = psDeviceNode->pvDevice;
-
-	if(psDevInfo)
-		psDevInfo->bRecord = g_ui32HostSampleIRQCount;
-
-	if (!ospm_power_is_hw_on(OSPM_GRAPHICS_ISLAND))
-		return bInterruptProcessed;
 
 	ui32IRQStatus = OSReadHWReg32(psDevInfo->pvRegsBaseKM, RGX_CR_META_SP_MSLVIRQSTATUS);
 
@@ -162,18 +157,6 @@ static IMG_BOOL RGX_LISRHandler (IMG_VOID *pvData)
 		
 		/* Sample the current count from the FW _after_ we've cleared the interrupt. */
 		g_ui32HostSampleIRQCount = psDevInfo->psRGXFWIfTraceBuf->ui32InterruptCount;
-
-		if(psDevInfo)
-			psDevInfo->aRecord = g_ui32HostSampleIRQCount;
-
-		if(psDevInfo->bRecord == psDevInfo->aRecord)
-		{
-			g_flagIgnore = 1;
-		}
-		else
-		{
-			g_flagIgnore = 0;
-		}
 
 		OSScheduleMISR(psDevInfo->pvMISRData);
 

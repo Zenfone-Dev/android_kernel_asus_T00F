@@ -389,10 +389,18 @@ struct sh_css_dp_config {
  */
 struct sh_css_nr_config {
 	u0_16 bnr_gain;	    /**< Strength of noise reduction (BNR) */
-	u0_16 ynr_gain;	    /**< Strength of noise reduction (YNR */
+	u0_16 ynr_gain;     /**< Strength of noise reduction (YNR */
 	u0_16 direction;    /**< Sensitivity of Edge (BNR) */
 	u0_16 threshold_cb; /**< Coring threshold for Cb (YNR) */
 	u0_16 threshold_cr; /**< Coring threshold for Cr (YNR) */
+};
+
+/** Configuration used by Bayer Noise Reduction (BNR) and
+ *  YCC noise reduction (YNR).
+ */
+struct sh_css_ext_nr_config {
+	u0_16 bnr_gain_dir;         /**< Strength of noise reduction (BNR) */
+	u0_16 ynr_gain_dir;         /**< Strength of noise reduction (YNR) */
 };
 
 /** Edge Enhancement (sharpen) configuration.
@@ -420,7 +428,14 @@ struct sh_css_gc_config {
 	unsigned short gain_k2; /**< */
 };
 
-
+/** Extended Configuration
+ *  used by Bayer Noise Reduction (BNR) and
+ *  YCC noise reduction (YNR).
+ */
+struct sh_css_ext_isp_config {
+	u0_16 bnr_gain_dir;         /**< Strength of noise reduction (BNR) */
+	u0_16 ynr_gain_dir;         /**< Strength of noise reduction (YNR) */
+};
 
 /* 
  * NOTE: 

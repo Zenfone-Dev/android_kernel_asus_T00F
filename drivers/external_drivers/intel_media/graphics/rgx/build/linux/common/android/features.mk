@@ -78,9 +78,6 @@ SUPPORT_GPUTRACE_EVENTS ?= 1
 # matches that of the SDK API_LEVEL.
 #
 RSC_API_LEVEL ?= $(API_LEVEL)
-ifeq ($(RSC_API_LEVEL),21)
-RSC_API_LEVEL := 20
-endif
 
 ##############################################################################
 # JB MR1 makes the framebuffer HAL obsolete.
@@ -161,9 +158,7 @@ endif
 ##############################################################################
 # JB added a new corkscrew API for userland backtracing.
 #
-ifeq ($(is_at_least_lollipop),0)
 PVR_ANDROID_HAS_CORKSCREW_API := 1
-endif
 
 ##############################################################################
 # JB MR2 added a capabilities parameter to fs_config.
@@ -206,11 +201,8 @@ endif
 # 'format' parameter to gralloc->alloc() to be ignored for non-USAGE_SW
 # allocations, so long as the bits per channel and sRGB-ness are preserved.
 #
-# (Leaving this optional as some customers want the GPU to render in the
-#  originally request GL formats -- i.e. RGBA/RGBX instead of BGRA/BGRX.)
-#
 ifeq ($(is_at_least_kitkat),1)
-PVR_ANDROID_REMAP_HW_ONLY_PIXEL_FORMATS ?= 1
+PVR_ANDROID_REMAP_HW_ONLY_PIXEL_FORMATS := 1
 endif
 
 ##############################################################################
@@ -246,7 +238,7 @@ endif
 # KitKat added very provisional/early support for sRGB render targets
 #
 ifeq ($(is_at_least_kitkat),1)
-PVR_ANDROID_HAS_HAL_PIXEL_FORMAT_sRGB ?= 1
+PVR_ANDROID_HAS_HAL_PIXEL_FORMAT_sRGB := 1
 endif
 
 ##############################################################################
@@ -268,7 +260,7 @@ endif
 ##############################################################################
 # Versions of Android between Cupcake and KitKat MR1 required Java 6.
 #
-ifeq ($(is_at_least_lollipop),0)
+ifneq ($(is_future_version),1)
 LEGACY_USE_JAVA6 ?= 1
 endif
 
@@ -276,33 +268,8 @@ endif
 # Versions of Android between ICS and KitKat MR1 used ion .heap_mask instead
 # of .heap_id_mask.
 #
-ifeq ($(is_at_least_lollipop),0)
+ifneq ($(is_future_version),1)
 PVR_ANDROID_HAS_ION_FIELD_HEAP_MASK := 1
-endif
-
-##############################################################################
-# Lollipop supports 64-bit. Configure BCC to emit both 32-bit and 64-bit LLVM
-# bitcode in the renderscript driver.
-#
-ifeq ($(is_at_least_lollipop),1)
-PVR_ANDROID_BCC_MULTIARCH_SUPPORT := 1
-endif
-
-##############################################################################
-# Lollipop annotates the cursor allocation with USAGE_CURSOR to enable it to
-# be accelerated with special cursor hardware (rather than wasting an
-# overlay). This flag stops the DDK from blocking the allocation.
-#
-ifeq ($(is_at_least_lollipop),1)
-PVR_ANDROID_HAS_GRALLOC_USAGE_CURSOR := 1
-endif
-
-##############################################################################
-# Lollipop changed the camera HAL metadata specification to require that
-# CONTROL_MAX_REGIONS specifies 3 integers (instead of 1).
-#
-ifeq ($(is_at_least_lollipop),1)
-PVR_ANDROID_CAMERA_CONTROL_MAX_REGIONS_HAS_THREE := 1
 endif
 
 # Placeholder for future version handling

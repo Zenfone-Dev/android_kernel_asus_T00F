@@ -312,13 +312,13 @@ sh_css_param_shading_table_prepare(const struct sh_css_shading_table *in_table,
 	/* We take into account the binning done by the sensor. We do this
 	   by cropping the non-binned part of the shading table and then
 	   increasing the size of a grid cell with this same binning factor. */
-	input_width  <<= sensor_binning;
-	input_height <<= sensor_binning;
+	input_width  *= sensor_binning;
+	input_height *= sensor_binning;
 	/* We also scale the padding by the same binning factor. This will
 	   make it much easier later on to calculate the padding of the
 	   shading table. */
-	left_padding  <<= sensor_binning;
-	right_padding <<= sensor_binning;
+	left_padding  *= sensor_binning;
+	right_padding *= sensor_binning;
 
 	/* during simulation, the used resolution can exceed the sensor
 	   resolution, so we clip it. */

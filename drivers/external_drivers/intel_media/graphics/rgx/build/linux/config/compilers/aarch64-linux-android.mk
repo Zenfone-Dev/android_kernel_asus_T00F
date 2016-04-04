@@ -1,6 +1,6 @@
 # 64-bit Android AArch64 compiler
 TARGET_PRIMARY_ARCH := target_aarch64
-ifeq ($(MULTIARCH),1)
+ifneq ($(MULTIARCH),)
  TARGET_SECONDARY_ARCH := target_armv7-a
  ifneq ($(MAKECMDGOALS),kbuild)
   ifneq ($(COMPONENTS),)

@@ -59,8 +59,9 @@ int hmm_bo_device_init(struct hmm_bo_device *bdev,
 
 	ret = hmm_vm_init(&bdev->vaddr_space, vaddr_start, size);
 	if (ret) {
-		dev_err(atomisp_dev, "hmm_vm_init falied. vaddr_start = 0x%x, size = %d\n",
-			vaddr_start, size);
+		dev_err(atomisp_dev, "hmm_vm_init falied. "
+			     "vaddr_start = 0x%x, size = %d\n", vaddr_start,
+			     size);
 		goto vm_init_err;
 	}
 
@@ -124,6 +125,13 @@ void hmm_bo_device_exit(struct hmm_bo_device *bdev)
 	if (bdev->iclient != NULL)
 		ion_client_destroy(bdev->iclient);
 #endif
+}
+
+void hmm_bo_device_cleanup_mmu_l2(struct hmm_bo_device *bdev)
+{
+	check_bodev_null_return_void(bdev);
+
+	isp_mmu_clean_l2(&bdev->mmu);
 }
 
 int hmm_bo_device_inited(struct hmm_bo_device *bdev)

@@ -31,6 +31,7 @@
 #include <linux/delay.h>
 #include <asm/intel-mid.h>
 #include <asm/intel_mid_hsu.h>
+#include <asm/intel_scu_flis.h>
 
 #ifndef CONFIG_ACPI
 #include <asm/bcm_bt_lpm.h>
@@ -173,6 +174,8 @@ static int bcm43xx_bt_rfkill_set_power(void *data, bool blocked)
 
 	if (!blocked) {
 #ifdef LPM_ON
+	    config_pin_flis(142, PULL, UP_20K);
+	    usleep_range(10, 50);
 		gpio_set_value(bt_lpm.gpio_wake, 1);
 		/*
 		* Delay advice by BRCM is min 2.5ns,
@@ -194,6 +197,7 @@ static int bcm43xx_bt_rfkill_set_power(void *data, bool blocked)
 #else
 		gpio_set_value(bt_lpm.gpio_enable_bt, 0);
 #endif
+		config_pin_flis(142, PULL, DOWN_20K);
 		pr_debug("%s: turn BT off\n", __func__);
 	}
 
@@ -481,6 +485,9 @@ static int bcm43xx_bluetooth_probe(struct platform_device *pdev)
 		goto err_gpio_enable_dir;
 	}
 #else
+	gpio_free(bt_lpm.gpio_wake);
+	gpio_free(bt_lpm.gpio_host_wake);
+	config_pin_flis(142, PULL, DOWN_20K);
 	ret = gpio_request(bt_lpm.gpio_enable_bt, pdev->name);
 	if (ret < 0) {
 		pr_err("%s: Unable to request gpio %d\n", __func__,

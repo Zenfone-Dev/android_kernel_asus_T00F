@@ -49,10 +49,6 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 extern "C" {
 #endif
 
-#if defined(KERNEL) && defined(ANDROID)
-#define __pvrsrv_defined_struct_enum__
-#include <services_kernel_client.h>
-#endif
 
 /**	Use PVR_DPF() unless message is necessary in release build
  */

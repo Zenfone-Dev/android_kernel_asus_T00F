@@ -490,6 +490,11 @@ static void dlp_tty_tx_fifo_wait_recycle(struct dlp_xfer_ctx *xfer_ctx)
 			pdu->break_frame = 0;
 	}
 
+    if (xfer_ctx->buffered) {
+        printk("[hsi] dlp_tty_tx_fifo: buffered = %d, clean buffered\n",xfer_ctx->buffered);
+        xfer_ctx->buffered = 0;
+    }
+
 	write_unlock_irqrestore(&xfer_ctx->lock, flags);
 }
 
@@ -732,6 +737,7 @@ static int dlp_tty_open(struct tty_struct *tty, struct file *filp)
 	 * as this flag will later adapt to the available TX buffer size. */
 	set_bit(TTY_NO_WRITE_SPLIT, &tty->flags);
 
+	atomic_set(&dlp_drv.is_tty_device_closed, 0);
 out:
 	pr_debug(DRVNAME ": TTY device open done (ret: %d)\n", ret);
 	return ret;
@@ -848,6 +854,8 @@ static void dlp_tty_close(struct tty_struct *tty, struct file *filp)
 
 		pr_debug(DRVNAME ": TTY device close request (%s, %d)\n",
 				current->comm, current->tgid);
+
+		atomic_set(&dlp_drv.is_tty_device_closed, 1);
 
 		/* Set TTY as closed to prevent RX/TX transactions */
 		if (need_cleanup)

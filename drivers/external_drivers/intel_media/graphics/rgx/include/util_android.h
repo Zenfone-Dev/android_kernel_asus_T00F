@@ -1,5 +1,6 @@
 /*************************************************************************/ /*!
-@Title          RGX Core BVNC 4.29.2.51
+@File           util_android
+@Title          Global definitions used by Android
 @Copyright      Copyright (c) Imagination Technologies Ltd. All Rights Reserved
 @License        Dual MIT/GPLv2
 
@@ -39,33 +40,15 @@ IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */ /**************************************************************************/
 
-#ifndef _RGXCORE_KM_4_29_2_51_H_
-#define _RGXCORE_KM_4_29_2_51_H_
+#ifndef _UTIL_ANDROID_H
+#define _UTIL_ANDROID_H
 
-/***** Automatically generated file (10/28/2014 1:55:48 PM): Do not edit manually ********************/
-/***** Timestamp:  (10/28/2014 1:55:48 PM)************************************************************/
-/***** CS: @2944502 ******************************************************************/
+#if __GNUC__ >= 3
+# define IMG_LIKELY(x) __builtin_expect (!!(x), 1)
+# define IMG_UNLIKELY(x) __builtin_expect (!!(x), 0)
+#else
+# define IMG_LIKELY(x) (x)
+# define IMG_UNLIKELY(x) (x)
+#endif
 
-
-/******************************************************************************
- * BVNC = 4.29.2.51 
- *****************************************************************************/
-#define RGX_BVNC_KM_B 4
-#define RGX_BVNC_KM_V 29
-#define RGX_BVNC_KM_N 2
-#define RGX_BVNC_KM_C 51
-
-/******************************************************************************
- * Errata 
- *****************************************************************************/
-
-
-
- 
-/******************************************************************************
- * Enhancements 
- *****************************************************************************/
-
-
-
-#endif /* _RGXCORE_KM_4_29_2_51_H_ */
+#endif /* _UTIL_ANDROID_H */

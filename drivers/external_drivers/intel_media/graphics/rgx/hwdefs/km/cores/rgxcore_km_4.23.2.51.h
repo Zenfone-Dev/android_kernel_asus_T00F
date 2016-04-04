@@ -1,6 +1,5 @@
 /*************************************************************************/ /*!
-@File           lma_heap_ion.h
-@Title          Ion heap for local memory
+@Title          RGX Core BVNC 4.23.2.51
 @Copyright      Copyright (c) Imagination Technologies Ltd. All Rights Reserved
 @License        Dual MIT/GPLv2
 
@@ -40,6 +39,33 @@ IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */ /**************************************************************************/
 
-#include PVR_ANDROID_ION_HEADER
+#ifndef _RGXCORE_KM_4_23_2_51_H_
+#define _RGXCORE_KM_4_23_2_51_H_
 
-struct ion_heap *lma_heap_create(struct ion_platform_heap *data);
+/***** Automatically generated file (10/13/2014 1:54:06 PM): Do not edit manually ********************/
+/***** Timestamp:  (10/13/2014 1:54:06 PM)************************************************************/
+/***** CS: @2791924 ******************************************************************/
+
+
+/******************************************************************************
+ * BVNC = 4.23.2.51 
+ *****************************************************************************/
+#define RGX_BVNC_KM_B 4
+#define RGX_BVNC_KM_V 23
+#define RGX_BVNC_KM_N 2
+#define RGX_BVNC_KM_C 51
+
+/******************************************************************************
+ * Errata 
+ *****************************************************************************/
+
+
+
+ 
+/******************************************************************************
+ * Enhancements 
+ *****************************************************************************/
+
+
+
+#endif /* _RGXCORE_KM_4_23_2_51_H_ */

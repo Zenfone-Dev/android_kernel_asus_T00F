@@ -47,16 +47,12 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 extern "C" {
 #endif
 
-#if defined(KERNEL) && defined(ANDROID)
-#define __pvrsrv_defined_struct_enum__
-#include <services_kernel_client.h>
-#endif
-
 #include "device.h"
 #include "resman.h"
 #include "power.h"
 #include "rgxsysinfo.h"
 #include "physheap.h"
+
 
 typedef struct _SYS_DEVICE_ID_TAG
 {

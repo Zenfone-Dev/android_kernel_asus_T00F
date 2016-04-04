@@ -602,36 +602,49 @@ static long __ov5693_set_exposure(struct v4l2_subdev *sd, int coarse_itg,
 		return ret;
 	}
 
+	ret = ov5693_write_reg(client, OV5693_8BIT, OV5693_AGC_H, (gain >> 8) & 0xff);
+	if (ret) {
+		dev_err(&client->dev, "%s: write %x error, aborted\n",
+			__func__, OV5693_AGC_H);
+		return ret;
+	}
+
 	/* Digital gain */
 	if (digitgain) {
-		int setvalue = 0;
-
-		/*
-		*  for sensor metadata only support 1x/2x digital gain, to support
-		*  sensor metadata we need switch from MWB gain to digital gain
-		*/
-		if (digitgain == 2048)
-			setvalue = 1;
-		else
-			setvalue = 0;
-
-		ret = ov5693_write_reg(client, OV5693_8BIT, OV5693_AGC_H, setvalue);
+		ret = ov5693_write_reg(client, OV5693_16BIT,
+				OV5693_MWB_RED_GAIN_H, digitgain);
 		if (ret) {
 			dev_err(&client->dev, "%s: write %x error, aborted\n",
-				__func__, OV5693_AGC_H);
+				__func__, OV5693_MWB_RED_GAIN_H);
+			return ret;
+		}
+
+		ret = ov5693_write_reg(client, OV5693_16BIT,
+				OV5693_MWB_GREEN_GAIN_H, digitgain);
+		if (ret) {
+			dev_err(&client->dev, "%s: write %x error, aborted\n",
+				__func__, OV5693_MWB_RED_GAIN_H);
+			return ret;
+		}
+
+		ret = ov5693_write_reg(client, OV5693_16BIT,
+				OV5693_MWB_BLUE_GAIN_H, digitgain);
+		if (ret) {
+			dev_err(&client->dev, "%s: write %x error, aborted\n",
+				__func__, OV5693_MWB_RED_GAIN_H);
 			return ret;
 		}
 	}
 
 	/* End group */
 	ret = ov5693_write_reg(client, OV5693_8BIT,
-				OV5693_GROUP_ACCESS, 0x10);
+			       OV5693_GROUP_ACCESS, 0x10);
 	if (ret)
 		return ret;
 
 	/* Delay launch group */
 	ret = ov5693_write_reg(client, OV5693_8BIT,
-				OV5693_GROUP_ACCESS, 0xa0);
+					   OV5693_GROUP_ACCESS, 0xa0);
 	if (ret)
 		return ret;
 	return ret;
@@ -1266,7 +1279,7 @@ static int ov5693_s_power(struct v4l2_subdev *sd, int on)
  * res->width/height smaller than w/h wouldn't be considered.
  * Returns the value of gap or -1 if fail.
  */
-#define LARGEST_ALLOWED_RATIO_MISMATCH 600
+#define LARGEST_ALLOWED_RATIO_MISMATCH 800
 static int distance(struct ov5693_resolution *res, u32 w, u32 h)
 {
 	unsigned int w_ratio = ((res->width << 13)/w);

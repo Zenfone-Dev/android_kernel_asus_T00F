@@ -146,6 +146,7 @@ static const struct sh_css_tnr_config    *tnr_config;
 static const struct sh_css_ob_config     *ob_config;
 static const struct sh_css_dp_config     *dp_config;
 static const struct sh_css_nr_config     *nr_config;
+static const struct sh_css_ext_nr_config     *ext_nr_config;
 static const struct sh_css_ee_config     *ee_config;
 static const struct sh_css_de_config     *de_config;
 static const struct sh_css_gc_config     *gc_config;
@@ -182,6 +183,7 @@ static bool isp_params_changed,
 	    ob_config_changed,
 	    dp_config_changed,
 	    nr_config_changed,
+	    ext_nr_config_changed,
 	    ee_config_changed,
 	    de_config_changed,
 	    gc_config_changed,
@@ -1623,6 +1625,16 @@ static const struct sh_css_nr_config disabled_nr_config = {
 	0
 };
 
+static const struct sh_css_ext_nr_config default_ext_nr_config = {
+	1,
+	1
+};
+
+static const struct sh_css_ext_nr_config disabled_ext_nr_config = {
+	0,
+	0
+};
+
 static const struct sh_css_ee_config default_ee_config = {
 	8192,
 	128,
@@ -2629,8 +2641,12 @@ sh_css_process_nr_ee(void)
 	    1 << isp_parameters.bnr_threshold_width_log2;
 	isp_parameters.bnr_gain_all =
 	    uDIGIT_FITTING(nr_config->bnr_gain, 16, SH_CSS_BNR_GAIN_SHIFT);
-	isp_parameters.bnr_gain_dir =
-	    uDIGIT_FITTING(nr_config->bnr_gain, 16, SH_CSS_BNR_GAIN_SHIFT);
+	if (ext_nr_config_changed == true)
+		isp_parameters.bnr_gain_dir =
+			uDIGIT_FITTING(ext_nr_config->bnr_gain_dir, 16, SH_CSS_BNR_GAIN_SHIFT);
+	else
+		isp_parameters.bnr_gain_dir =
+			uDIGIT_FITTING(nr_config->bnr_gain, 16, SH_CSS_BNR_GAIN_SHIFT);
 	isp_parameters.bnr_clip = uDIGIT_FITTING(
 					(unsigned)16384, 16, SH_CSS_BAYER_BITS);
 
@@ -2642,8 +2658,14 @@ sh_css_process_nr_ee(void)
 		uDIGIT_FITTING((unsigned)8192, 16, SH_CSS_BAYER_BITS);
 	isp_parameters.ynr_gain_all =
 	    uDIGIT_FITTING(nr_config->ynr_gain, 16, SH_CSS_YNR_GAIN_SHIFT);
-	isp_parameters.ynr_gain_dir =
-	    uDIGIT_FITTING(nr_config->ynr_gain, 16, SH_CSS_YNR_GAIN_SHIFT);
+
+	if (ext_nr_config_changed == true)
+		isp_parameters.ynr_gain_dir =
+			uDIGIT_FITTING(ext_nr_config->ynr_gain_dir, 16, SH_CSS_YNR_GAIN_SHIFT);
+	else
+		isp_parameters.ynr_gain_dir =
+			uDIGIT_FITTING(nr_config->ynr_gain, 16, SH_CSS_YNR_GAIN_SHIFT);
+
 	isp_parameters.ynryee_dirthreshold_s =
 	    min((uDIGIT_FITTING(nr_config->direction, 16, SH_CSS_BAYER_BITS)
 				    << 1),
@@ -2687,6 +2709,7 @@ sh_css_process_nr_ee(void)
 	isp_parameters.ynryee_Yclip = SH_CSS_BAYER_MAXVAL;
 	isp_params_changed = true;
 	nr_config_changed = false;
+	ext_nr_config_changed = false;
 	ee_config_changed = false;
 
 	sh_css_dtrace(SH_DBG_TRACE_PRIVATE, "sh_css_process_nr_ee() leave:\n");
@@ -3805,6 +3828,31 @@ void sh_css_get_nr_config(
 		(*config)->threshold_cb, (*config)->threshold_cr);
 }
 
+void sh_css_set_ext_nr_config(
+       const struct sh_css_ext_nr_config *config)
+{
+	/* config can be NULL */
+
+	if (config != NULL) {
+	/* Checkpatch patch */
+		sh_css_dtrace(SH_DBG_TRACE,
+			"sh_css_set_ext_nr_config() enter: "
+			"config.bnr_gain_dir=%d, config.ynr_gain_dir=%d\n",
+		config->bnr_gain_dir, config->ynr_gain_dir);
+		ext_nr_config = config;
+	} else {
+	/* Checkpatch patch */
+		sh_css_dtrace(SH_DBG_TRACE, "sh_css_set_nr_config() enter: "
+			"config=%p\n",config);
+		ext_nr_config = &disabled_ext_nr_config;
+	}
+	ext_nr_config_changed = true;
+
+	sh_css_dtrace(SH_DBG_TRACE,
+		"sh_css_set_ext_nr_config() leave: "
+		"return_void\n");
+}
+
 void sh_css_set_ee_config(
 	const struct sh_css_ee_config *config)
 {
@@ -3941,14 +3989,16 @@ void sh_css_set_anr_config(
 
 	if (config != NULL) {
 /* Checkpatch patch */
-	sh_css_dtrace(SH_DBG_TRACE, "sh_css_set_anr_config() enter: "
+	sh_css_dtrace(SH_DBG_TRACE,
+		"sh_css_set_anr_config() enter: "
 		"config.threshold=%d\n",
 		config->threshold);
 		anr_config = config;
 	} else {
 /* Checkpatch patch */
-	sh_css_dtrace(SH_DBG_TRACE, "sh_css_set_anr_config() enter: "
-		"config=%p\n",config);
+	sh_css_dtrace(SH_DBG_TRACE,
+		"sh_css_set_anr_config() enter: "
+		"default_anr_config=%p\n",config);
 		anr_config = &default_anr_config;
 	}
 	anr_config_changed = true;
@@ -5174,6 +5224,7 @@ enum sh_css_err sh_css_params_init(void)
 	sh_css_set_ob_config(&default_ob_config);
 	sh_css_set_dp_config(&default_dp_config);
 	sh_css_set_nr_config(&default_nr_config);
+	sh_css_set_ext_nr_config(&default_ext_nr_config);
 	sh_css_set_ee_config(&default_ee_config);
 	sh_css_set_de_config(&default_de_config);
 	sh_css_set_gc_config(&default_gc_config);

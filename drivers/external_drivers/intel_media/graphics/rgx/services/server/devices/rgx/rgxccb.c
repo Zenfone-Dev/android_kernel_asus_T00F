@@ -78,7 +78,6 @@ struct _RGX_CLIENT_CCB_ {
 	IMG_UINT32					ui32HostWriteOffset;		/*!< CCB write offset from the driver side */
 	IMG_UINT32					ui32LastPDumpWriteOffset;			/*!< CCB write offset from the last time we submitted a command in capture range */
 	IMG_UINT32					ui32LastROff;				/*!< Last CCB Read offset to help detect any CCB wedge */
-	IMG_UINT32					ui32LastWOff;				/*!< Last CCB Write offset to help detect any CCB wedge */
 	IMG_UINT32					ui32ByteCount;				/*!< Count of the number of bytes written to CCCB */
 	IMG_UINT32					ui32LastByteCount;			/*!< Last value of ui32ByteCount to help detect any CCB wedge */
 	IMG_UINT32					ui32Size;					/*!< Size of the CCB */
@@ -1361,7 +1360,6 @@ PVRSRV_ERROR CheckForStalledCCB(RGX_CLIENT_CCB  *psCurrentClientCCB)
 	}
 
 	if (ui32SampledRdOff != ui32SampledWrOff &&
-				psCurrentClientCCB->ui32LastROff != psCurrentClientCCB->ui32LastWOff &&
 				ui32SampledRdOff == psCurrentClientCCB->ui32LastROff &&
 				(psCurrentClientCCB->ui32ByteCount - psCurrentClientCCB->ui32LastByteCount) < psCurrentClientCCB->ui32Size)
 	{
@@ -1378,7 +1376,6 @@ PVRSRV_ERROR CheckForStalledCCB(RGX_CLIENT_CCB  *psCurrentClientCCB)
 	}
 
 	psCurrentClientCCB->ui32LastROff = ui32SampledRdOff;
-	psCurrentClientCCB->ui32LastWOff = ui32SampledWrOff;
 	psCurrentClientCCB->ui32LastByteCount = psCurrentClientCCB->ui32ByteCount;
 
 	return eError;

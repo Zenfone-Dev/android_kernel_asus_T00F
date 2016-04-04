@@ -95,8 +95,6 @@ static PVRSRV_DEVICE_CONFIG gsDevices[] =
 		0,
 		/* bIRQIsShared */
 		IMG_TRUE,
-		/* eIRQActiveLevel */
-		PVRSRV_DEVICE_IRQ_ACTIVE_SYSDEFAULT,
 
 		/* hDevData */
 		&gsRGXData,

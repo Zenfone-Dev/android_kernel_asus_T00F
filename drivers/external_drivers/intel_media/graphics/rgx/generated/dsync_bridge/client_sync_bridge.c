@@ -160,7 +160,7 @@ IMG_INTERNAL PVRSRV_ERROR IMG_CALLCONV BridgeSyncRecordAdd(IMG_HANDLE hBridge,
 							   const IMG_CHAR *puiClassName)
 {
 	PVRSRV_ERROR eError;
-	SYNC_RECORD_HANDLE pshRecordInt = IMG_NULL;
+	SYNC_RECORD_HANDLE pshRecordInt;
 	SYNC_PRIMITIVE_BLOCK * pshServerSyncPrimBlockInt;
 	PVR_UNREFERENCED_PARAMETER(hBridge);
 

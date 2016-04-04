@@ -181,6 +181,11 @@ static void dlp_ctrl_handle_tx_timeout(struct work_struct *work)
 
 	pr_err(DRVNAME ": Processing HSI TX Timeout\n");
 
+	if (unlikely(atomic_read(&dlp_drv.is_tty_device_closed))) {
+		pr_err(DRVNAME ": Ignore HSI TX Timeout because tty was closing or closed\n");
+		return;
+	}
+
 	/* Call any register TX timeout CB */
 	for (i = 0; i < DLP_CHANNEL_COUNT; i++) {
 		ch_ctx = DLP_CHANNEL_CTX(i);
@@ -641,6 +646,8 @@ static int dlp_ctrl_cmd_send(struct dlp_channel *ch_ctx,
 
 	ctrl_ctx = DLP_CTRL_CTX;
 
+	mutex_lock(&ch_ctx->tx.cmd_sync);
+
 	/* Save the current channel state */
 	old_state = dlp_ctrl_get_channel_state(ch_ctx->hsi_channel);
 
@@ -700,6 +707,7 @@ static int dlp_ctrl_cmd_send(struct dlp_channel *ch_ctx,
 		/* No need to call the complete sending call back,
 		 * because of failure */
 		tx_msg->complete = NULL;
+		tx_msg->context = NULL;
 		ret = -EIO;
 		/* free only the cmd, because
 		 * the message is already in the controller fifo.
@@ -793,6 +801,8 @@ out:
 	/* Restore the channel state in error case */
 	if (ret)
 		dlp_ctrl_set_channel_state(ch_ctx->hsi_channel, old_state);
+
+	mutex_unlock(&ch_ctx->tx.cmd_sync);
 
 	return ret;
 }
@@ -997,6 +1007,9 @@ int dlp_ctrl_open_channel(struct dlp_channel *ch_ctx)
 	unsigned char param1 = PARAM1(ch_ctx->tx.pdu_size);
 	unsigned char param2 = PARAM2(ch_ctx->tx.pdu_size);
 	struct dlp_ctrl_context *ctrl_ctx = DLP_CTRL_CTX;
+
+        /* Reset the credits counter because AP still could get credit cmd during closing ch */
+        ch_ctx->credits = 0;
 
 	/* Send the OPEN_CONN command */
 	ret = dlp_ctrl_cmd_send(ch_ctx,

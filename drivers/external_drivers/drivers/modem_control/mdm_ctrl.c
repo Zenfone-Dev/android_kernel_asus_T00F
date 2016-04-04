@@ -42,6 +42,7 @@
 
 #define MDM_MODEM_READY_DELAY	60	/* Modem readiness wait duration (sec) */
 
+extern void serial_hsu_set_rts_fixed(bool);
 /**
  *  mdm_ctrl_handle_hangup - This function handle the modem reset/coredump
  *  @work: a reference to work queue element
@@ -186,6 +187,8 @@ static int mdm_ctrl_cold_reset(struct mdm_info *mdm)
 {
 	pr_warn(DRVNAME ": Cold reset requested");
 
+	serial_hsu_set_rts_fixed(true);
+
 	mdm_ctrl_power_off(mdm);
 	mdm_ctrl_cold_boot(mdm);
 
@@ -208,6 +211,12 @@ static irqreturn_t mdm_ctrl_coredump_it(int irq, void *data)
 	/* Ignoring event if we are in OFF state. */
 	if (mdm_ctrl_get_state(mdm) == MDM_CTRL_STATE_OFF) {
 		pr_err(DRVNAME ": CORE_DUMP while OFF\n");
+		goto out;
+	}
+
+	/* Ignoring if Modem reset is ongoing. */
+	if (atomic_read(&mdm->rst_ongoing) == 1) {
+		pr_err(DRVNAME ": CORE_DUMP while Modem Reset is ongoing\n");
 		goto out;
 	}
 
@@ -254,6 +263,7 @@ static irqreturn_t mdm_ctrl_reset_it(int irq, void *data)
 
 			pr_err(DRVNAME ": IPC READY !\n");
 			mdm_ctrl_set_state(mdm, MDM_CTRL_STATE_IPC_READY);
+			serial_hsu_set_rts_fixed(false);
 		}
 
 		goto out;

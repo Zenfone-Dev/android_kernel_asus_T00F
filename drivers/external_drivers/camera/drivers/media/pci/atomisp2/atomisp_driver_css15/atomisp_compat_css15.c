@@ -155,6 +155,11 @@ void atomisp_css_rx_clear_irq_info(unsigned int infos)
 	sh_css_rx_clear_interrupt_info(infos);
 }
 
+void atomisp_css_rx_clear_irq_status(unsigned int infos)
+{
+       sh_css_rx_clear_interrupt_status(infos);
+}
+
 int atomisp_css_irq_enable(struct atomisp_device *isp,
 			    enum atomisp_css_irq_info info, bool enable)
 {
@@ -1096,6 +1101,12 @@ void atomisp_css_set_nr_config(struct atomisp_sub_device *asd,
 	sh_css_set_nr_config(nr_config);
 }
 
+void atomisp_css_set_ext_nr_config(struct atomisp_sub_device *asd,
+                        struct atomisp_css_ext_nr_config *ext_nr_config)
+{
+       sh_css_set_ext_nr_config(ext_nr_config);
+}
+
 void atomisp_css_set_ee_config(struct atomisp_sub_device *asd,
 			struct atomisp_css_ee_config *ee_config)
 {
@@ -1136,6 +1147,12 @@ void atomisp_css_set_gc_config(struct atomisp_sub_device *asd,
 			struct atomisp_css_gc_config *gc_config)
 {
 	sh_css_set_gc_config(gc_config);
+}
+
+void atomisp_css_set_anr_config(struct atomisp_sub_device *asd,
+                        struct atomisp_css_anr_config *anr_config)
+{
+       sh_css_set_anr_config(anr_config);
 }
 
 void atomisp_css_set_3a_config(struct atomisp_sub_device *asd,

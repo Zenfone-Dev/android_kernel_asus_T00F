@@ -43,12 +43,6 @@ ccflags-y := \
  -I$(TOP)/include/system/rgx_tc \
  $(ccflags-y)
 
-# Avoid picking up the services version of 'sync.h'
-CFLAGS_adf_common.o := -Idrivers/staging/android
-CFLAGS_adf_fbdev.o := -Idrivers/staging/android
-CFLAGS_adf_pdp.o := -Idrivers/staging/android
-CFLAGS_adf_sunxi.o := -Idrivers/staging/android
-
 adf_fbdev-y += \
  kernel/drivers/staging/imgtec/adf_fbdev.o \
  kernel/drivers/staging/imgtec/adf_common.o

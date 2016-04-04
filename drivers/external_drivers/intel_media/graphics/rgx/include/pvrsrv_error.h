@@ -48,7 +48,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  *****************************************************************************
  * Error values
  *****************************************************************************/
-typedef enum PVRSRV_ERROR
+typedef enum _PVRSRV_ERROR_
 {
 	PVRSRV_OK,
 #define PVRE(x) x,
