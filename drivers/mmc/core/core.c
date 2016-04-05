@@ -86,7 +86,7 @@ MODULE_PARM_DESC(
 	"MMC/SD cards are removable and may be removed during suspend");
 
 //<ASUS_BSP+>
-int sd_power = 1;
+extern int sd_power;
 
 static ssize_t sd_power_proc_read(struct file *file, char __user *buf, size_t count, loff_t *ppos);
 static ssize_t sd_power_proc_write(struct file *file, const char __user *buf, size_t count, loff_t *ppos);
