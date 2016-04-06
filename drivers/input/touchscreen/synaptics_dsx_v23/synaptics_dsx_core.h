@@ -39,6 +39,21 @@
 #define sstrtoul(...) strict_strtoul(__VA_ARGS__)
 #endif
 
+#if (LINUX_VERSION_CODE > KERNEL_VERSION(3, 8, 0))
+#if defined(MODULE) || defined(CONFIG_HOTPLUG)
+#define __devexit_p(x) x
+#else
+#define __devexit_p(x) NULL
+#endif
+/* Used for HOTPLUG */
+#define __devinit        __section(.devinit.text) __cold notrace
+#define __devinitdata    __section(.devinit.data)
+#define __devinitconst   __section(.devinit.rodata)
+#define __devexit        __section(.devexit.text) __exitused __cold notrace
+#define __devexitdata    __section(.devexit.data)
+#define __devexitconst   __section(.devexit.rodata)
+#endif
+
 #define PDT_PROPS (0X00EF)
 #define PDT_START (0x00E9)
 #define PDT_END (0x00D0)
@@ -81,6 +96,9 @@
 #define MASK_3BIT 0x07
 #define MASK_2BIT 0x03
 #define MASK_1BIT 0x01
+
+#include <linux/switch.h>
+#include <linux/wakelock.h>
 
 enum exp_fn {
 	RMI_DEV = 0,
@@ -144,6 +162,8 @@ struct synaptics_rmi4_f11_extra_data {
 struct synaptics_rmi4_f12_extra_data {
 	unsigned char data1_offset;
 	unsigned char data4_offset;
+	unsigned char data4_size;
+	unsigned char data4_data[5];
 	unsigned char data15_offset;
 	unsigned char data15_size;
 	unsigned char data15_data[(F12_FINGERS_TO_SUPPORT + 7) / 8];
@@ -273,7 +293,13 @@ struct synaptics_rmi4_data {
 	unsigned short f01_cmd_base_addr;
 	unsigned short f01_ctrl_base_addr;
 	unsigned short f01_data_base_addr;
+	unsigned short f12_ctrl20_base_addr;
+	unsigned short f12_ctrl23_base_addr;
+	unsigned short f12_ctrl26_base_addr;
 	unsigned int firmware_id;
+	unsigned int config_id;
+	unsigned short glove_mode;
+	unsigned short dclick_mode;
 	int irq;
 	int sensor_max_x;
 	int sensor_max_y;
@@ -283,6 +309,8 @@ struct synaptics_rmi4_data {
 	bool suspend;
 	bool sensor_sleep;
 	bool stay_awake;
+	struct switch_dev touch_sdev;
+	struct wake_lock wake_lock;
 	bool f11_wakeup_gesture;
 	bool f12_wakeup_gesture;
 	bool enable_wakeup_gesture;

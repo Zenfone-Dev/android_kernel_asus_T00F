@@ -42,13 +42,6 @@ static int parse_dt(struct device *dev, struct synaptics_dsx_board_data *bdata)
 	bdata->irq_gpio = of_get_named_gpio_flags(np,
 			"synaptics,irq-gpio", 0, NULL);
 
-	retval = of_property_read_u32(np, "synaptics,irq-on-state",
-			&value);
-	if (retval < 0)
-		bdata->irq_on_state = 0;
-	else
-		bdata->irq_on_state = value;
-
 	retval = of_property_read_u32(np, "synaptics,irq-flags", &value);
 	if (retval < 0)
 		return retval;
@@ -350,6 +343,8 @@ static int synaptics_rmi4_i2c_probe(struct i2c_client *client,
 {
 	int retval;
 
+	printk("[Synaptics] %s Start\n", __func__);
+
 	if (!i2c_check_functionality(client->adapter,
 			I2C_FUNC_SMBUS_BYTE_DATA)) {
 		dev_err(&client->dev,
@@ -419,6 +414,8 @@ static int synaptics_rmi4_i2c_probe(struct i2c_client *client,
 				__func__);
 		return -ENODEV;
 	}
+
+	printk("[Synaptics] %s End\n", __func__);
 
 	return 0;
 }

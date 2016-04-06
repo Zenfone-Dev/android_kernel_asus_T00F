@@ -96,7 +96,9 @@
 #ifdef CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_I2C
 #include "device_libs/platform_synaptics_dsx.h"
 #endif
-
+#ifdef CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_I2C_V23
+#include "device_libs/platform_synaptics_dsx_v23.h"
+#endif
 /* SW devices */
 #include "device_libs/platform_panel.h"
 
@@ -313,7 +315,7 @@ struct devs_id __initconst device_ids[] = {
 		&panel_handler},
 
 	/* Touch */
-#ifdef CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_I2C
+#if defined(CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_I2C) || defined(CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_I2C_V23)
 	{"synaptics_dsx_i2c", SFI_DEV_TYPE_I2C, 0, &get_dsx_platformdata, NULL},
 #endif
 
