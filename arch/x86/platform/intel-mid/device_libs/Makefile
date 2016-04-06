@@ -80,7 +80,9 @@ obj-$(subst m,y,$(CONFIG_TOUCHSCREEN_HIMAX_HX8528_ME372CL)) += platform_hx8528_m
 ifdef CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_I2C
 obj-$(subst m,y,$(CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_I2C))                += platform_synaptics_dsx.o
 endif
-
+ifdef CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_I2C_V23
+obj-$(subst m,y,$(CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_I2C_V23))                += platform_synaptics_dsx_v23.o
+endif
 # SPI Devices
 obj-$(subst m,y,$(CONFIG_SERIAL_MRST_MAX3110)) += platform_max3111.o
 obj-$(subst m,y,$(CONFIG_SERIAL_XMM2230)) += platform_xmm2230.o

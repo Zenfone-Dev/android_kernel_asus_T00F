@@ -25,7 +25,7 @@
 #include <linux/types.h>
 #include <linux/of_gpio.h>
 #include <linux/platform_device.h>
-#include <linux/input/synaptics_dsx.h>
+#include <linux/input/synaptics_dsx_v23.h>
 #include "synaptics_dsx_core.h"
 
 #define SYN_I2C_RETRY_TIMES 10
@@ -41,13 +41,6 @@ static int parse_dt(struct device *dev, struct synaptics_dsx_board_data *bdata)
 
 	bdata->irq_gpio = of_get_named_gpio_flags(np,
 			"synaptics,irq-gpio", 0, NULL);
-
-	retval = of_property_read_u32(np, "synaptics,irq-on-state",
-			&value);
-	if (retval < 0)
-		bdata->irq_on_state = 0;
-	else
-		bdata->irq_on_state = value;
 
 	retval = of_property_read_u32(np, "synaptics,irq-flags", &value);
 	if (retval < 0)
@@ -350,6 +343,8 @@ static int synaptics_rmi4_i2c_probe(struct i2c_client *client,
 {
 	int retval;
 
+	printk("[Synaptics] %s Start\n", __func__);
+
 	if (!i2c_check_functionality(client->adapter,
 			I2C_FUNC_SMBUS_BYTE_DATA)) {
 		dev_err(&client->dev,
@@ -401,8 +396,6 @@ static int synaptics_rmi4_i2c_probe(struct i2c_client *client,
 	}
 #else
 	hw_if.board_data = client->dev.platform_data;
-	if (hw_if.board_data->irq_gpio > -1)
-		hw_if.board_data->irq = gpio_to_irq(hw_if.board_data->irq_gpio);
 #endif
 
 	hw_if.bus_access = &bus_access;
@@ -422,6 +415,8 @@ static int synaptics_rmi4_i2c_probe(struct i2c_client *client,
 		return -ENODEV;
 	}
 
+	printk("[Synaptics] %s End\n", __func__);
+
 	return 0;
 }
 
@@ -434,7 +429,6 @@ static int synaptics_rmi4_i2c_remove(struct i2c_client *client)
 
 static const struct i2c_device_id synaptics_rmi4_id_table[] = {
 	{I2C_DRIVER_NAME, 0},
-	{"synaptics_3402", 0},
 	{},
 };
 MODULE_DEVICE_TABLE(i2c, synaptics_rmi4_id_table);
@@ -458,11 +452,7 @@ static struct i2c_driver synaptics_rmi4_i2c_driver = {
 		.of_match_table = synaptics_rmi4_of_match_table,
 	},
 	.probe = synaptics_rmi4_i2c_probe,
-#if LINUX_VERSION_CODE < KERNEL_VERSION(3,8,0)
 	.remove = __devexit_p(synaptics_rmi4_i2c_remove),
-#else
-	.remove = synaptics_rmi4_i2c_remove,
-#endif
 	.id_table = synaptics_rmi4_id_table,
 };
 

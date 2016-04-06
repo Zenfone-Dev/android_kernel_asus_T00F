@@ -136,13 +136,20 @@ fw-shipped-$(CONFIG_USB_VICAM) += vicam/firmware.fw
 fw-shipped-$(CONFIG_VIDEO_CPIA2) += cpia2/stv0672_vp4.bin
 fw-shipped-$(CONFIG_YAM) += yam/1200.bin yam/9600.bin
 fw-shipped-$(CONFIG_INTEL_MID_REMOTEPROC) += intel_mid/intel_mid_remoteproc.fw
-
+ifdef CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_FW_UPDATE
 fw-shipped-$(CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_FW_UPDATE) += synaptics/startup_fw_update_A500_LCE_1688183_354C0121.img
 fw-shipped-$(CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_FW_UPDATE) += synaptics/startup_fw_update_A500_JTouch_1688183_354A0129.img
 fw-shipped-$(CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_FW_UPDATE) += synaptics/startup_fw_update_A500_YFO_1688183_3559003.img
 fw-shipped-$(CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_FW_UPDATE) += synaptics/startup_fw_update_A600_Ofilm_1688183_364F0132.img
 fw-shipped-$(CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_FW_UPDATE) += synaptics/startup_fw_update_A600_JTouch_1688183_364A0130.img
-
+endif
+ifdef CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_FW_UPDATE_V23
+fw-shipped-$(CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_FW_UPDATE_V23) += synaptics/startup_fw_update_A500_LCE_1688183_354C0121.img
+fw-shipped-$(CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_FW_UPDATE_V23) += synaptics/startup_fw_update_A500_JTouch_1688183_354A0129.img
+fw-shipped-$(CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_FW_UPDATE_V23) += synaptics/startup_fw_update_A500_YFO_1688183_3559003.img
+fw-shipped-$(CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_FW_UPDATE_V23) += synaptics/startup_fw_update_A600_Ofilm_1688183_364F0132.img
+fw-shipped-$(CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_FW_UPDATE_V23) += synaptics/startup_fw_update_A600_JTouch_1688183_364A0130.img
+endif
 fw-shipped-all := $(fw-shipped-y) $(fw-shipped-m) $(fw-shipped-)
 
 # Directories which we _might_ need to create, so we have a rule for them.

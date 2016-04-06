@@ -24,7 +24,7 @@
 #include <linux/input.h>
 #include <linux/types.h>
 #include <linux/platform_device.h>
-#include <linux/input/synaptics_dsx.h>
+#include <linux/input/synaptics_dsx_v23.h>
 #include "synaptics_dsx_core.h"
 
 #define SPI_READ 0x80

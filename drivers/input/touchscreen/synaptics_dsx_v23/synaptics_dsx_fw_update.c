@@ -24,13 +24,20 @@
 #include <linux/input.h>
 #include <linux/firmware.h>
 #include <linux/platform_device.h>
-#include <linux/input/synaptics_dsx.h>
+#include <linux/input/synaptics_dsx_v23.h>
 #include "synaptics_dsx_core.h"
 
-#define FW_IMAGE_NAME "synaptics/startup_fw_update.img"
-/*
+//<ASUS+>#define FW_IMAGE_NAME "synaptics/startup_fw_update.img"
+#define FW_IMAGE_NAME_A500_LCE "synaptics/startup_fw_update_A500_LCE_1688183_354C0121.img"
+#define FW_IMAGE_NAME_A500_JTouch "synaptics/startup_fw_update_A500_JTouch_1688183_354A0129.img"
+#define FW_IMAGE_NAME_A500_YFO "synaptics/startup_fw_update_A500_YFO_1688183_3559003.img"
+#define FW_IMAGE_NAME_A600_Ofilm "synaptics/startup_fw_update_A600_Ofilm_1688183_364F0132.img"
+#define FW_IMAGE_NAME_A600_JTouch "synaptics/startup_fw_update_A600_JTouch_1688183_364A0130.img"
+
+//<ASUS+>/*
 #define DO_STARTUP_FW_UPDATE
-*/
+//<ASUS+>*/
+
 #define FORCE_UPDATE false
 #define DO_LOCKDOWN false
 
@@ -72,6 +79,9 @@
 
 #define MIN_SLEEP_TIME_US 50
 #define MAX_SLEEP_TIME_US 100
+
+extern int Read_PROJ_ID(void);
+extern int Read_TP_ID(void);
 
 #define INT_DISABLE_WAIT_MS 20
 #define ENTER_FLASH_PROG_WAIT_MS 20
@@ -923,12 +933,6 @@ static enum flash_area fwu_go_nogo(void)
 
 		strptr += 2;
 		firmware_id = kzalloc(MAX_FIRMWARE_ID_LEN, GFP_KERNEL);
-		if (!firmware_id) {
-			dev_err(rmi4_data->pdev->dev.parent,
-				"%s: Fail to alloc firmware id\n",
-				__func__);
-			goto exit;
-		}
 		while (strptr[index] >= '0' && strptr[index] <= '9') {
 			firmware_id[index] = strptr[index];
 			index++;
@@ -948,7 +952,8 @@ static enum flash_area fwu_go_nogo(void)
 			"%s: Image firmware ID = %d\n",
 			__func__, (unsigned int)image_fw_id);
 
-	if (image_fw_id > device_fw_id) {
+//<ASUS+>	if (image_fw_id > device_fw_id) {
+	if (image_fw_id != device_fw_id) { //<ASUS+>
 		flash_area = UI_FIRMWARE;
 		goto exit;
 	} else if (image_fw_id < device_fw_id) {
@@ -990,7 +995,11 @@ static enum flash_area fwu_go_nogo(void)
 			fwu->img.ui_config.data[2],
 			fwu->img.ui_config.data[3]);
 
-	if (image_config_id > device_config_id) {
+//<ASUS+>	if (image_config_id > device_config_id) {
+	if (image_config_id != device_config_id) {	//<ASUS+>
+		dev_info(rmi4_data->pdev->dev.parent,
+				"%s: Image config ID not same with device config ID, need update config\n",
+				__func__);
 		flash_area = CONFIG_AREA;
 		goto exit;
 	}
@@ -1758,7 +1767,49 @@ static int fwu_start_reflash(void)
 	pr_notice("%s: Start of reflash process\n", __func__);
 
 	if (fwu->img.image == NULL) {
-		strncpy(fwu->img.image_name, FW_IMAGE_NAME, MAX_IMAGE_NAME_LEN);
+		//<ASUS+>strncpy(fwu->image_name, FW_IMAGE_NAME, MAX_IMAGE_NAME_LEN);
+		//<ASUS+>
+		if (Read_TP_ID() == 0)	//A500 LCE:ID(11,1) = (GP_CORE_073, GP_CAMERA_S86) = (0,0)
+		{
+			dev_info(rmi4_data->pdev->dev.parent,
+					"%s: TP A500 LCE\n",
+					__func__);
+			strncpy(fwu->img.image_name, FW_IMAGE_NAME_A500_LCE, MAX_IMAGE_NAME_LEN);
+		}
+		else if (Read_TP_ID() == 1)	//A500 JTouch:ID(11,1) = (GP_CORE_073, GP_CAMERA_S86) = (0,1)
+		{
+			dev_info(rmi4_data->pdev->dev.parent,
+					"%s: TP A500 JTouch\n",
+					__func__);
+			strncpy(fwu->img.image_name, FW_IMAGE_NAME_A500_JTouch, MAX_IMAGE_NAME_LEN);
+		}
+		else if (Read_TP_ID() == 2)	//A600 Ofilm:ID(11,1) = (GP_CORE_073, GP_CAMERA_S86) = (1,0)
+		{
+			dev_info(rmi4_data->pdev->dev.parent,
+					"%s: TP A600 Ofilm\n",
+					__func__);
+			strncpy(fwu->img.image_name, FW_IMAGE_NAME_A600_Ofilm, MAX_IMAGE_NAME_LEN);
+		}
+		else if (Read_TP_ID() == 3 && (
+		 Read_PROJ_ID() == 0 || Read_PROJ_ID() == 1 ||
+		 Read_PROJ_ID() == 2 || Read_PROJ_ID() == 3 ||
+		 Read_PROJ_ID() == 4))	//A500 YFO:ID(11,1) = (GP_CORE_073, GP_CAMERA_S86) = (1,1)
+		{
+			dev_info(rmi4_data->pdev->dev.parent,
+					"%s: TP A500 YFO\n",
+					__func__);
+			strncpy(fwu->img.image_name, FW_IMAGE_NAME_A500_YFO, MAX_IMAGE_NAME_LEN);
+		}
+		else if (Read_TP_ID() == 3 && (
+		 Read_PROJ_ID() == 5 || Read_PROJ_ID() == 7))	//A600 JTouch:ID(11,1) = (GP_CORE_073, GP_CAMERA_S86) = (1,1)
+		{
+			dev_info(rmi4_data->pdev->dev.parent,
+					"%s: TP A600 JTouch\n",
+					__func__);
+			strncpy(fwu->img.image_name, FW_IMAGE_NAME_A600_JTouch, MAX_IMAGE_NAME_LEN);
+		}
+		//<ASUS->
+
 		dev_dbg(rmi4_data->pdev->dev.parent,
 				"%s: Requesting firmware image %s\n",
 				__func__, fwu->img.image_name);
