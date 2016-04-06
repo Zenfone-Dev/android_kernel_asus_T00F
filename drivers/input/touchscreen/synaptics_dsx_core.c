@@ -3804,6 +3804,7 @@ static void synaptics_rmi4_late_resume(struct early_suspend *h)
 
 //<ASUS_DTP+>
 #ifdef ASUS_TOUCH_DTP_WAKEUP
+	int retval;
 	struct synaptics_rmi4_f12_ctrl_20 ctrl_20;
 
 	if (rmi4_data->dclick_mode == 1) {
