@@ -39,9 +39,8 @@ static unsigned char pwr_reg_name[] = "";
 static unsigned char bus_reg_name[] = "";
 static unsigned int cap_button_codes[] =
 		{};
-static unsigned int vir_button_codes[] = {
-		KEY_HOME, 100, 900, 100, 60,
-		KEY_BACK, 300, 900, 100, 60};
+static unsigned int vir_button_codes[] =
+		{};
 
 #elif (SYNAPTICS_MODULE == TM1940)
 #define SYNAPTICS_I2C_DEVICE
