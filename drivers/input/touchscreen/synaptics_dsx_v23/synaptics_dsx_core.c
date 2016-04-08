@@ -3066,8 +3066,7 @@ static void synaptics_rmi4_set_params(struct synaptics_rmi4_data *rmi4_data)
 			rmi4_data->sensor_max_x, 0, 0);
 	input_set_abs_params(rmi4_data->input_dev,
 			ABS_MT_POSITION_Y, 0,
-			1280, 0, 0);	//<ASUS_virtual_key+>
-//<ASUS_virtual_key+>			rmi4_data->sensor_max_y, 0, 0);
+			1280, 0, 0);
 #ifdef REPORT_2D_W
 	input_set_abs_params(rmi4_data->input_dev,
 			ABS_MT_TOUCH_MAJOR, 0,
@@ -3169,12 +3168,6 @@ static int synaptics_rmi4_set_input_dev(struct synaptics_rmi4_data *rmi4_data)
 #ifdef INPUT_PROP_DIRECT
 	set_bit(INPUT_PROP_DIRECT, rmi4_data->input_dev->propbit);
 #endif
-
-//<ASUS_virtual_key+>
-	set_bit(KEY_MENU, rmi4_data->input_dev->keybit);
-	set_bit(KEY_BACK, rmi4_data->input_dev->keybit);
-	set_bit(KEY_HOME, rmi4_data->input_dev->keybit);
-//<ASUS_virtual_key->
 
 //<ASUS_DTP+>
 #ifdef ASUS_TOUCH_DTP_WAKEUP
@@ -3540,99 +3533,6 @@ static int synaptics_rmi4_reset_device(struct synaptics_rmi4_data *rmi4_data)
 	return 0;
 }
 
-//<ASUS_virtual_key+>
-static ssize_t virtual_keys_show(struct kobject *kobj,  
-             struct kobj_attribute *attr, char *buf)  
-{
-	//<ASUS_virtual_key+>
-	if (Read_TP_ID() == 0)	//A500 LCE:ID(11,1) = (GP_CORE_073, GP_CAMERA_S86) = (0,0)
-	{
-		return sprintf(buf,  
-			__stringify(EV_KEY) ":" __stringify(KEY_BACK) ":108:1345:130:104"  
-			"\n" __stringify(EV_KEY) ":" __stringify(KEY_HOME) ":359:1345:185:104"  
-			"\n" __stringify(EV_KEY) ":" __stringify(KEY_MENU) ":622:1345:130:104"  
-			"\n");
-	}
-	else if (Read_TP_ID() == 1)	//A500 JTouch:ID(11,1) = (GP_CORE_073, GP_CAMERA_S86) = (0,1)
-	{
-		return sprintf(buf,  
-			__stringify(EV_KEY) ":" __stringify(KEY_BACK) ":108:1345:130:104"  
-			"\n" __stringify(EV_KEY) ":" __stringify(KEY_HOME) ":359:1345:185:104"  
-			"\n" __stringify(EV_KEY) ":" __stringify(KEY_MENU) ":622:1345:130:104"  
-			"\n");
-	}
-	else if (Read_TP_ID() == 2)	//A600 Ofilm:ID(11,1) = (GP_CORE_073, GP_CAMERA_S86) = (1,0)
-	{
-		return sprintf(buf,  
-			__stringify(EV_KEY) ":" __stringify(KEY_BACK) ":119:1333:130:60"  
-			"\n" __stringify(EV_KEY) ":" __stringify(KEY_HOME) ":355:1333:185:60"  
-			"\n" __stringify(EV_KEY) ":" __stringify(KEY_MENU) ":603:1333:130:60"  
-			"\n");
-	}
-	else if (Read_TP_ID() == 3 && (
-	 Read_PROJ_ID() == 0 || Read_PROJ_ID() == 1 ||
-	 Read_PROJ_ID() == 2 || Read_PROJ_ID() == 3 ||
-	 Read_PROJ_ID() == 4))	//A500 YFO:ID(11,1) = (GP_CORE_073, GP_CAMERA_S86) = (1,1)
-	{
-		return sprintf(buf,  
-			__stringify(EV_KEY) ":" __stringify(KEY_BACK) ":108:1345:130:104"  
-			"\n" __stringify(EV_KEY) ":" __stringify(KEY_HOME) ":359:1345:185:104"  
-			"\n" __stringify(EV_KEY) ":" __stringify(KEY_MENU) ":622:1345:130:104"  
-			"\n");
-	}
-	else if (Read_TP_ID() == 3 && (
-	Read_PROJ_ID() == 5 || Read_PROJ_ID() == 7))	//A600 JTouch:ID(11,1) = (GP_CORE_073, GP_CAMERA_S86) = (1,1)
-	{
-		return sprintf(buf,  
-			__stringify(EV_KEY) ":" __stringify(KEY_BACK) ":119:1333:130:60"  
-			"\n" __stringify(EV_KEY) ":" __stringify(KEY_HOME) ":355:1333:185:60"  
-			"\n" __stringify(EV_KEY) ":" __stringify(KEY_MENU) ":603:1333:130:60"  
-			"\n");
-	}
-	else							//Others
-	{
-		return sprintf(buf,  
-			__stringify(EV_KEY) ":" __stringify(KEY_BACK) ":108:1345:130:104"  
-			"\n" __stringify(EV_KEY) ":" __stringify(KEY_HOME) ":359:1345:185:104"  
-			"\n" __stringify(EV_KEY) ":" __stringify(KEY_MENU) ":622:1345:130:104"  
-			"\n");
-	}
-	//<ASUS_virtual_key->
-}  
-  
-static struct kobj_attribute virtual_keys_attr = {  
-    .attr = {  
-        .name = "virtualkeys.synaptics_dsx",  
-        .mode = S_IRUGO,  
-    },  
-    .show = &virtual_keys_show,  
-};  
- 
-static struct attribute *properties_attrs[] = {  
-    &virtual_keys_attr.attr,  
-    NULL  
-};  
-  
-static struct attribute_group properties_attr_group = {  
-   .attrs = properties_attrs,  
-};  
-  
-static void virtual_keys_init(void)  
-{  
-    int ret;  
-
-    struct kobject *properties_kobj;  
-    properties_kobj = kobject_create_and_add("board_properties", NULL);  
-
-    if (properties_kobj)  
-       ret = sysfs_create_group(properties_kobj, 
-                    &properties_attr_group);  
- 
-   if (!properties_kobj || ret)  
-      pr_err("failed to create board_properties\n");      
-}  
-//<ASUS_virtual_key->
-
 //<ASUS_SDev+>
 static ssize_t touch_switch_name(struct switch_dev *sdev, char *buf)
 {
@@ -3828,7 +3728,6 @@ static int __devinit synaptics_rmi4_probe(struct platform_device *pdev)
 		goto err_set_gpio;
 	}
 
-	virtual_keys_init();	//<ASUS_virtual_key+>
 
 	if (hw_if->ui_hw_init) {
 		retval = hw_if->ui_hw_init(rmi4_data);
