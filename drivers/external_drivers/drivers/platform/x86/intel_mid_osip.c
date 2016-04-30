@@ -335,13 +335,6 @@ static int osip_shutdown_notifier_call(struct notifier_block *notifier,
 static int osip_reboot_target_call(const char *target, int id)
 {
 	int ret_ipc;
-
-	struct file *filep = NULL;
-	char *misc_block = "/dev/block/mmcblk0p4";
-	const char string_recovery[] = "boot-recovery";
-	ssize_t n;
-	loff_t pos = 0;
-	mm_segment_t old_fs;
 #ifdef DEBUG
 	u8 rbt_reason;
 #endif
@@ -375,18 +368,6 @@ static int osip_reboot_target_call(const char *target, int id)
 	if (id == SIGNED_RECOVERY_ATTR && ret_ipc >= 0) {
 		pr_warn("[REBOOT] %s, invalidating osip\n", __func__);
 		access_osip_record(osip_invalidate, (void *)(get_osii_index(SIGNED_MOS_ATTR)));
-
-		if (INTEL_MID_BOARD(1, TABLET, BYT) ||
-			INTEL_MID_BOARD(1, PHONE, CLVTP)) {
-			old_fs = get_fs();
-			set_fs(KERNEL_DS);
-			filep = filp_open(misc_block, O_WRONLY, 0644);
-			vfs_write(filep, string_recovery, sizeof(string_recovery), &pos);
-			vfs_fsync(filep, 0);
-
-			filp_close(filep, NULL);
-			set_fs(old_fs);
-		}
 	}
 	return NOTIFY_DONE;
 }
