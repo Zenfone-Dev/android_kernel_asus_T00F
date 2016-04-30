@@ -346,14 +346,6 @@ static int osip_reboot_target_call(const char *target, int id)
 	if (id == SIGNED_RECOVERY_ATTR)
 		intel_scu_ipc_read_osnib_rr(&rbt_reason);
 #endif
-	if (INTEL_MID_BOARD(1, TABLET, BYT) ||
-		INTEL_MID_BOARD(1, PHONE, CLVTP) ||
-		INTEL_MID_BOARD(1, PHONE, CLVTP)) {
-		if (id == SIGNED_MOS_ATTR || id == SIGNED_RECOVERY_ATTR) {
-			pr_warn("[REBOOT] %s, force cold boot\n", __func__);
-			prg_cold_boot();
-		}
-	}
 
 	ret_ipc = intel_scu_ipc_write_osnib_rr(id);
 	if (ret_ipc < 0)

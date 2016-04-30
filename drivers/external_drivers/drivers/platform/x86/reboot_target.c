@@ -34,7 +34,6 @@ static const unsigned int DEFAULT_TARGET_INDEX = 0;
 static const struct name2id NAME2ID[] = {
 	{ "main",       0x00 },
 	{ "android",    0x00 },
-	{ "user_request",    0x00 },
 	{ "charging",   0x0A },
 	{ "recovery",   0x0C },
 	{ "fastboot",   0x0E },

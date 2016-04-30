@@ -79,7 +79,6 @@ static void *(*get_intel_mid_ops[])(void) = INTEL_MID_OPS_INIT;
 enum intel_mid_cpu_type __intel_mid_cpu_chip;
 EXPORT_SYMBOL_GPL(__intel_mid_cpu_chip);
 
-static int force_cold_boot2;
 static int force_cold_boot;
 module_param(force_cold_boot, int, 0644);
 MODULE_PARM_DESC(force_cold_boot,
@@ -90,11 +89,6 @@ static void intel_mid_power_off(void)
 {
 	pmu_power_off();
 };
-
-void prg_cold_boot(void) {
-	force_cold_boot2 = 1;
-}
-EXPORT_SYMBOL(prg_cold_boot);
 
 void set_reboot_force(enum reboot_force_type type)
 {
@@ -126,7 +120,7 @@ static void intel_mid_reboot(void)
 			udelay(10);
 	}
 
-	if (force_cold_boot || force_cold_boot2)
+	if (force_cold_boot)
 #ifdef CONFIG_X86_MDFLD
 		rpmsg_send_generic_simple_command(IPCMSG_COLD_BOOT, 0);
 #else

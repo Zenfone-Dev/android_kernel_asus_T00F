@@ -52,7 +52,6 @@ enum reboot_force_type {
 };
 
 #ifdef CONFIG_X86_INTEL_MID
-extern void prg_cold_boot(void);
 extern void set_reboot_force(enum reboot_force_type type);
 extern enum reboot_force_type get_reboot_force(void);
 #else
