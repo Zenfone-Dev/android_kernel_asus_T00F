@@ -1201,8 +1201,8 @@ static int synaptics_rmi4_f12_abs_report(struct synaptics_rmi4_data *rmi4_data,
 
 			printk("[Synaptics] Wakeup by double tap\n");
 
-			input_report_key(rmi4_data->input_dev, KEY_POWER, 1);
-			input_report_key(rmi4_data->input_dev, KEY_POWER, 0);
+			input_report_key(rmi4_data->input_dev, KEY_WAKEUP, 1);
+			input_report_key(rmi4_data->input_dev, KEY_WAKEUP, 0);
 			input_sync(rmi4_data->input_dev);
 			return 0;
 		}
@@ -2787,7 +2787,7 @@ static int synaptics_rmi4_set_input_dev(struct synaptics_rmi4_data *rmi4_data)
 
 //<ASUS_DTP+>
 #ifdef ASUS_TOUCH_DTP_WAKEUP
-	set_bit(KEY_POWER, rmi4_data->input_dev->keybit);
+	set_bit(KEY_WAKEUP, rmi4_data->input_dev->keybit);
 #endif
 //<ASUS_DTP->
 
