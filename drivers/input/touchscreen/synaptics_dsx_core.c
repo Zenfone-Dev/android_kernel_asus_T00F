@@ -42,6 +42,8 @@
 #define TYPE_B_PROTOCOL
 #endif
 
+#include <asm/uaccess.h>
+#include <linux/seq_file.h>
 #define NO_0D_WHILE_2D
 #define REPORT_2D_Z
 #define REPORT_2D_W
@@ -387,6 +389,10 @@ struct synaptics_rmi4_exp_fn_data {
 
 static struct synaptics_rmi4_exp_fn_data exp_data;
 
+struct proc_dir_entry *rmi4_proc_parent;
+struct proc_dir_entry *rmi4_0dbutton_proc_entry;
+//struct proc_dir_entry *rmi4_dclick_mode_proc_entry;
+
 static struct device_attribute attrs[] = {
 #ifdef CONFIG_HAS_EARLYSUSPEND
 	__ATTR(full_pm_cycle, (S_IRUGO | S_IWUGO),
@@ -569,29 +575,22 @@ static ssize_t synaptics_rmi4_0dbutton_show(struct device *dev,
 			rmi4_data->button_0d_enabled);
 }
 
-static ssize_t synaptics_rmi4_0dbutton_store(struct device *dev,
-		struct device_attribute *attr, const char *buf, size_t count)
+static void synaptics_rmi4_0dbutton_update(struct synaptics_rmi4_data *rmi4_data,
+		unsigned int input)
 {
 	int retval;
-	unsigned int input;
 	unsigned char ii;
 	unsigned char intr_enable;
 	struct synaptics_rmi4_fn *fhandler;
-	struct synaptics_rmi4_data *rmi4_data = dev_get_drvdata(dev);
 	struct synaptics_rmi4_device_info *rmi;
+
+	if (rmi4_data->button_0d_enabled == input)
+		return;
 
 	rmi = &(rmi4_data->rmi4_mod_info);
 
-	if (sscanf(buf, "%u", &input) != 1)
-		return -EINVAL;
-
-	input = input > 0 ? 1 : 0;
-
-	if (rmi4_data->button_0d_enabled == input)
-		return count;
-
 	if (list_empty(&rmi->support_fn_list))
-		return -ENODEV;
+		return;
 
 	list_for_each_entry(fhandler, &rmi->support_fn_list, link) {
 		if (fhandler->fn_number == SYNAPTICS_RMI4_F1A) {
@@ -602,7 +601,7 @@ static ssize_t synaptics_rmi4_0dbutton_store(struct device *dev,
 					&intr_enable,
 					sizeof(intr_enable));
 			if (retval < 0)
-				return retval;
+				return;
 
 			if (input == 1)
 				intr_enable |= fhandler->intr_mask;
@@ -614,11 +613,27 @@ static ssize_t synaptics_rmi4_0dbutton_store(struct device *dev,
 					&intr_enable,
 					sizeof(intr_enable));
 			if (retval < 0)
-				return retval;
+				return;
 		}
 	}
 
 	rmi4_data->button_0d_enabled = input;
+
+	return;
+}
+
+static ssize_t synaptics_rmi4_0dbutton_store(struct device *dev,
+		struct device_attribute *attr, const char *buf, size_t count)
+{
+	unsigned int input;
+	struct synaptics_rmi4_data *rmi4_data = dev_get_drvdata(dev);
+
+	if (sscanf(buf, "%u", &input) != 1)
+		return -EINVAL;
+
+	input = input > 0 ? 1 : 0;
+
+	synaptics_rmi4_0dbutton_update(rmi4_data, input);
 
 	return count;
 }
@@ -3256,6 +3271,83 @@ exit:
 }
 EXPORT_SYMBOL(synaptics_rmi4_new_function);
 
+static int synaptics_rmi4_0dbutton_show_proc(struct seq_file *m, void *v)
+{
+	struct synaptics_rmi4_data *rmi4_data;
+
+	if (exp_data.rmi4_data)
+		rmi4_data = exp_data.rmi4_data;
+	else
+		return -ENOMEM;
+
+	return seq_printf(m, "%u\n", rmi4_data->button_0d_enabled);
+}
+
+static int synaptics_rmi4_0dbutton_open_proc(struct inode *inode, struct file *file)
+{
+	return single_open(file, synaptics_rmi4_0dbutton_show_proc, inode->i_private);
+}
+
+static ssize_t synaptics_rmi4_0dbutton_write_proc(struct file *file,
+			const char __user *buf, size_t count, loff_t *ppos)
+{
+	unsigned int input;
+	struct synaptics_rmi4_data *rmi4_data;
+
+	if (exp_data.rmi4_data)
+		rmi4_data = exp_data.rmi4_data;
+	else
+		return -ENOMEM;
+
+	if (sscanf(buf, "%u", &input) != 1)
+		return -EINVAL;
+
+	input = input > 0 ? 1 : 0;
+
+	synaptics_rmi4_0dbutton_update(rmi4_data, input);
+
+	return count;
+}
+
+static const struct file_operations rmi4_0dbutton_proc_fops = {
+	.owner		= THIS_MODULE,
+	.open		= synaptics_rmi4_0dbutton_open_proc,
+	.read		= seq_read,
+	.write		= synaptics_rmi4_0dbutton_write_proc,
+	.release	= single_release,
+};
+
+static int synaptics_rmi4_init_proc(void)
+{
+	rmi4_proc_parent = proc_mkdir("synaptics_dsx", NULL);
+	if (!rmi4_proc_parent) {
+		printk(KERN_ERR "%s: Unable to create synaptics_dsx proc entry\n", __func__);
+		return -ENOMEM;
+	}
+
+	rmi4_0dbutton_proc_entry = proc_create("0dbutton", 0664,
+									rmi4_proc_parent, &rmi4_0dbutton_proc_fops);
+	if (!rmi4_0dbutton_proc_entry) {
+		printk(KERN_ERR "%s: Unable to create 0dbutton proc entry\n", __func__);
+		return -ENOMEM;
+	}
+
+	return 0;
+}
+
+static int synaptics_rmi4_remove_proc(void)
+{
+	if (rmi4_proc_parent) {
+		if (rmi4_0dbutton_proc_entry)
+			remove_proc_entry("0dbutton", rmi4_proc_parent);
+
+		remove_proc_entry("synaptics_dsx", NULL);
+	}
+
+	return 0;
+}
+
+
  /**
  * synaptics_rmi4_probe()
  *
@@ -3463,6 +3555,17 @@ static int __devinit synaptics_rmi4_probe(struct platform_device *pdev)
 
 	printk("[Synaptics] %s End\n", __func__);
 
+	exp_data.workqueue = create_singlethread_workqueue("dsx_exp_workqueue");
+	INIT_DELAYED_WORK(&exp_data.work, synaptics_rmi4_exp_fn_work);
+	exp_data.rmi4_data = rmi4_data;
+	exp_data.queue_work = true;
+	queue_delayed_work(exp_data.workqueue,
+			&exp_data.work,
+			0);
+
+	/* artefvck : Initialize procfs for user space access */
+	synaptics_rmi4_init_proc();
+
 	return retval;
 
 err_sysfs:
@@ -3537,6 +3640,13 @@ static int __devexit synaptics_rmi4_remove(struct platform_device *pdev)
 	struct synaptics_rmi4_data *rmi4_data = platform_get_drvdata(pdev);
 	const struct synaptics_dsx_board_data *bdata =
 			rmi4_data->hw_if->board_data;
+
+	/* artefvck : De-initialize procfs */
+	synaptics_rmi4_remove_proc();
+
+	cancel_delayed_work_sync(&exp_data.work);
+	flush_workqueue(exp_data.workqueue);
+	destroy_workqueue(exp_data.workqueue);
 
 	for (attr_count = 0; attr_count < ARRAY_SIZE(attrs); attr_count++) {
 		sysfs_remove_file(&rmi4_data->input_dev->dev.kobj,
@@ -3984,6 +4094,9 @@ static int synaptics_rmi4_suspend(struct device *dev)
 
 	return 0;
 
+		/* artefvck : Revert button enabler on suspend */
+		synaptics_rmi4_0dbutton_update(rmi4_data, !rmi4_data->button_0d_enabled);
+
 //<ASUS_DTP+>
 #ifdef ASUS_TOUCH_DTP_WAKEUP
 	}
@@ -4088,6 +4201,9 @@ static int synaptics_rmi4_resume(struct device *dev)
 	mutex_unlock(&exp_data.mutex);
 
 	rmi4_data->touch_stopped = false;
+
+		/* artefvck : Revert button enabler on resume */
+		synaptics_rmi4_0dbutton_update(rmi4_data, !rmi4_data->button_0d_enabled);
 
 	return 0;
 
