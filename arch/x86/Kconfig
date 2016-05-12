@@ -174,6 +174,14 @@ config MRD7P05
 
 	If unsure, say N.
 
+config BOARD_CTP
+	bool "CloverTrail platform"
+	---help---
+	This option is needed for Intel Atom Clovertrail
+	platforms
+
+	if unsure, say N.
+
 config NEED_DMA_MAP_STATE
 	def_bool y
 	depends on X86_64 || INTEL_IOMMU || DMA_API_DEBUG
