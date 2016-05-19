@@ -43,7 +43,7 @@ extern int mipicsi_flag;
 extern int pad_w;
 extern int pad_h;
 
-#define CSS_DTRACE_VERBOSITY_LEVEL	7	/* Controls trace verbosity */
+#define CSS_DTRACE_VERBOSITY_LEVEL	5	/* Controls trace verbosity */
 #define CSS_DTRACE_VERBOSITY_TIMEOUT	9	/* Verbosity on ISP timeout */
 #define MFLD_MAX_ZOOM_FACTOR	64
 #define MRFLD_MAX_ZOOM_FACTOR	1024

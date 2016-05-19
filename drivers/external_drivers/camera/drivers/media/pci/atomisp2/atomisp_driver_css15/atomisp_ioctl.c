@@ -359,25 +359,25 @@ const struct atomisp_format_bridge atomisp_output_fmts[] = {
 		.description = "Bayer 16"
 	}, {
 		.pixelformat = V4L2_PIX_FMT_SBGGR8,
-		.depth = 8,
+		.depth = 16,
 		.mbus_code = V4L2_MBUS_FMT_SBGGR8_1X8,
 		.sh_fmt = CSS_FRAME_FORMAT_RAW,
 		.description = "Bayer 8"
 	}, {
 		.pixelformat = V4L2_PIX_FMT_SGBRG8,
-		.depth = 8,
+		.depth = 16,
 		.mbus_code = V4L2_MBUS_FMT_SGBRG8_1X8,
 		.sh_fmt = CSS_FRAME_FORMAT_RAW,
 		.description = "Bayer 8"
 	}, {
 		.pixelformat = V4L2_PIX_FMT_SGRBG8,
-		.depth = 8,
+		.depth = 16,
 		.mbus_code = V4L2_MBUS_FMT_SGRBG8_1X8,
 		.sh_fmt = CSS_FRAME_FORMAT_RAW,
 		.description = "Bayer 8"
 	}, {
 		.pixelformat = V4L2_PIX_FMT_SRGGB8,
-		.depth = 8,
+		.depth = 16,
 		.mbus_code = V4L2_MBUS_FMT_SRGGB8_1X8,
 		.sh_fmt = CSS_FRAME_FORMAT_RAW,
 		.description = "Bayer 8"
@@ -1483,11 +1483,13 @@ static int atomisp_streamon(struct file *file, void *fh,
 		goto out;
 
 start_sensor:
+#if 0
 	if (isp->flash) {
 		asd->params.num_flash_frames = 0;
 		asd->params.flash_state = ATOMISP_FLASH_IDLE;
 		atomisp_setup_flash(asd);
 	}
+#endif
 
 	if (!isp->sw_contex.file_input) {
 		atomisp_css_irq_enable(isp, CSS_IRQ_INFO_CSS_RECEIVER_SOF,
@@ -1704,8 +1706,9 @@ stopsensor:
 	}
 
 	if (isp->flash) {
-		asd->params.num_flash_frames = 0;
-		asd->params.flash_state = ATOMISP_FLASH_IDLE;
+		if(asd->params.num_flash_frames == 0){
+		     asd->params.flash_state = ATOMISP_FLASH_IDLE;
+        }
 	}
 
 	/* if other streams are running, isp should not be powered off */
@@ -1889,7 +1892,8 @@ static int atomisp_s_ctrl(struct file *file, void *fh,
 		break;
 	case V4L2_CID_REQUEST_FLASH:
 		ret = atomisp_flash_enable(asd, control->value);
-		break;
+		printk("ASUSBSP --- V4L2_CID_REQUEST_FLASH   \n");
+        break;
 	case V4L2_CID_ATOMISP_LOW_LIGHT:
 		ret = atomisp_low_light(asd, 1, &control->value);
 		break;
@@ -1973,7 +1977,8 @@ static int atomisp_camera_g_ext_ctrls(struct file *file, void *fh,
 		case V4L2_CID_FLASH_STATUS:
 		case V4L2_CID_FLASH_INTENSITY:
 		case V4L2_CID_FLASH_TORCH_INTENSITY:
-		case V4L2_CID_FLASH_INDICATOR_INTENSITY:
+		case V4L2_CID_XE_FLASH_INTENSITY:
+        case V4L2_CID_FLASH_INDICATOR_INTENSITY:
 		case V4L2_CID_FLASH_TIMEOUT:
 		case V4L2_CID_FLASH_STROBE:
 		case V4L2_CID_FLASH_MODE:
@@ -1996,7 +2001,7 @@ static int atomisp_camera_g_ext_ctrls(struct file *file, void *fh,
             printk(KERN_INFO "ASUSBSP --- ctrl.value is %d \n", ctrl.value);
             ret = 0;
             break;
-		default:
+        default:
 			ret = -EINVAL;
 		}
 
@@ -2078,7 +2083,7 @@ static int atomisp_camera_s_ext_ctrls(struct file *file, void *fh,
 		case V4L2_CID_FLASH_STATUS:
 		case V4L2_CID_FLASH_INTENSITY:
 		case V4L2_CID_FLASH_TORCH_INTENSITY:
-		case V4L2_CID_FLASH_INDICATOR_INTENSITY:
+        case V4L2_CID_FLASH_INDICATOR_INTENSITY:
 		case V4L2_CID_FLASH_TIMEOUT:
 		case V4L2_CID_FLASH_STROBE:
 		case V4L2_CID_FLASH_MODE:
@@ -2114,8 +2119,8 @@ static int atomisp_camera_s_ext_ctrls(struct file *file, void *fh,
                 u8 send_buff[] = {1,ctrl.value,0,0,0,0,0,0};
                 Xe_flash_send_cmd(send_buff);
             }
-			break;
-		default:
+           break;
+        default:
 			ctr = v4l2_ctrl_find(&asd->ctrl_handler, ctrl.id);
 			if (ctr)
 				ret = v4l2_ctrl_s_ctrl(ctr, ctrl.value);
@@ -2420,18 +2425,21 @@ static long atomisp_vidioc_default(struct file *file, void *fh,
 			return v4l2_subdev_call(
 					isp->inputs[asd->input_curr].camera,
 					core, ioctl, cmd, arg);
+// <ChungYi>
+    case ATOMISP_IOC_S_EXPOSURE:
 
-	case ATOMISP_IOC_S_EXPOSURE:
-#if 1	// <ChungYi>    leong++
-	case ATOMISP_TEST_CMD_SET_VCM_POS:
+         if(xe_debug_flag >1){
+           ( (struct atomisp_exposure*)arg)->integration_time[0] = xe_debug_flag;
+         }
+    case ATOMISP_TEST_CMD_SET_VCM_POS:
 	case ATOMISP_TEST_CMD_GET_VCM_POS:
 	case ATOMISP_TEST_CMD_SET_TORCH:
 	case ATOMISP_TEST_CMD_SET_FLASH:
-#endif
+// </ChungYi>
 	case ATOMISP_IOC_G_SENSOR_CALIBRATION_GROUP:
 	case ATOMISP_IOC_G_SENSOR_PRIV_INT_DATA:
-	case ATOMISP_IOC_S_BINNING_SUM:		// 	// <ChungYi>    leong++
-	case ATOMISP_IOC_S_SET_DRAKMODE:
+    case ATOMISP_IOC_S_BINNING_SUM:
+    case ATOMISP_IOC_S_SET_DRAKMODE:
 		mutex_unlock(&isp->mutex);
 		return v4l2_subdev_call(isp->inputs[asd->input_curr].camera,
 					core, ioctl, cmd, arg);
