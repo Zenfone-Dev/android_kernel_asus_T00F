@@ -435,5 +435,8 @@ void cpufreq_frequency_table_get_attr(struct cpufreq_frequency_table *table,
 void cpufreq_frequency_table_update_policy_cpu(struct cpufreq_policy *policy);
 
 void cpufreq_frequency_table_put_attr(unsigned int cpu);
-#endif /* _LINUX_CPUFREQ_H */
+
 void set_cpufreq_boost(unsigned long val);
+
+#endif /* _LINUX_CPUFREQ_H */
+

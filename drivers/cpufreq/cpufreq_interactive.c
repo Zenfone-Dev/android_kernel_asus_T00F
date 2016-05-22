@@ -1122,12 +1122,13 @@ static ssize_t store_boost(struct cpufreq_interactive_tunables *tunables,
 		return ret;
 
 	tunables->boost_val = val;
-    if (tunables->boost_val == 2) {
-        tunables->boostpulse_endtime = ktime_to_us(ktime_get()) + 5000000;
-        trace_cpufreq_interactive_boost("pulse");
-        cpufreq_interactive_boost();
-        tunables->boost_val = 0;
-    } else if (tunables->boost_val) {
+
+	if (tunables->boost_val == 2) {
+		tunables->boostpulse_endtime = ktime_to_us(ktime_get()) + 5000000;
+                trace_cpufreq_interactive_boost("pulse");
+                cpufreq_interactive_boost();
+                tunables->boost_val = 0;
+	} else if (tunables->boost_val) {
 		trace_cpufreq_interactive_boost("on");
 		cpufreq_interactive_boost();
 	} else {
@@ -1137,25 +1138,30 @@ static ssize_t store_boost(struct cpufreq_interactive_tunables *tunables,
 	return count;
 }
 
-void set_cpufreq_boost(unsigned long val){
-    struct cpufreq_interactive_cpuinfo *pcpu =        &per_cpu(cpuinfo, smp_processor_id());
-    struct cpufreq_interactive_tunables *tunables =       pcpu->policy->governor_data;
-    tunables->boost_val = val;
-    if (tunables->boost_val == 2) {
-        tunables->boostpulse_endtime = ktime_to_us(ktime_get()) + 5000000;
-        trace_cpufreq_interactive_boost("pulse");
-        cpufreq_interactive_boost();
-        tunables->boost_val = 0;
-    } else if (tunables->boost_val) {
-        trace_cpufreq_interactive_boost("on");
-        cpufreq_interactive_boost();
-    } else {
-        trace_cpufreq_interactive_unboost("off");
-    }
-    return;
+void set_cpufreq_boost(unsigned long val)
+{
+        struct cpufreq_interactive_cpuinfo *pcpu =
+		&per_cpu(cpuinfo, raw_smp_processor_id());
+
+        struct cpufreq_interactive_tunables *tunables =
+		pcpu->policy->governor_data;
+
+        tunables->boost_val = val;
+        if (tunables->boost_val == 2) {
+                tunables->boostpulse_endtime = ktime_to_us(ktime_get()) + 5000000;
+                trace_cpufreq_interactive_boost("pulse");
+                cpufreq_interactive_boost();
+                tunables->boost_val = 0;
+        } else if (tunables->boost_val) {
+                trace_cpufreq_interactive_boost("on");
+                cpufreq_interactive_boost();
+        } else {
+                trace_cpufreq_interactive_unboost("off");
+        }
+
+	return;
 }
 EXPORT_SYMBOL_GPL(set_cpufreq_boost);
-
 static ssize_t store_boostpulse(struct cpufreq_interactive_tunables *tunables,
 				const char *buf, size_t count)
 {
@@ -1736,3 +1742,4 @@ MODULE_AUTHOR("Mike Chan <mike@android.com>");
 MODULE_DESCRIPTION("'cpufreq_interactive' - A cpufreq governor for "
 	"Latency sensitive workloads");
 MODULE_LICENSE("GPL");
+
