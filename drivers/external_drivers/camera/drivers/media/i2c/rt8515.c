@@ -27,7 +27,7 @@ static int set_light_record;
 static int set_light_record_odd;
 static void rt8515_torch_on(u8);
 static void rt8515_flash_off(unsigned long );
-u8 inline turn_percent_to_s2c(u8);
+static u8 inline turn_percent_to_s2c(u8);
 
 
 static ssize_t flash_show(struct file *dev, char *buffer, size_t count, loff_t *ppos)
@@ -94,7 +94,7 @@ DEVICE_ATTR(flash, 0664, flash_show, flash_store);
 #endif
 
 
-u8 inline turn_percent_to_s2c(u8 light_intensity_percentage){
+static u8 inline turn_percent_to_s2c(u8 light_intensity_percentage){
 		u8 ret;
         set_light_record = (int) light_intensity_percentage;
 
