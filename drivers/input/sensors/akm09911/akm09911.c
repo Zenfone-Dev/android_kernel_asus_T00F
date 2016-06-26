@@ -186,7 +186,10 @@ static int AKECS_Set_CNTL(
 			/* Set flag */
 			akm->is_busy = 1;
 			atomic_set(&akm->drdy, 0);
-			/* wait at least 100us after changing mode */
+			/* wait at least 100us after changing mode */	/* Modify for only to impact A600cg */
+    if (Read_PROJ_ID() == PROJ_ID_A600CG) {
+			udelay(100); }
+
 			//udelay(100);
 		}
 	}
@@ -216,7 +219,9 @@ static int AKECS_Set_PowerDown(
 	} else {
 		dev_dbg(&akm->i2c->dev, "Powerdown mode is set.");
 		/* wait at least 100us after changing mode */
-		//udelay(100);
+    if (Read_PROJ_ID() == PROJ_ID_A600CG) {
+			udelay(100); }
+
 	}
 	/* Clear status */
 	akm->is_busy = 0;
@@ -258,7 +263,13 @@ static int AKECS_Reset(
 		}
 	}
 	/* Device will be accessible 100 us after, 300 us reference MTK */
-	udelay(300);
+	    if (Read_PROJ_ID() == PROJ_ID_A500CG) {
+	udelay(300); }
+
+	    if (Read_PROJ_ID() == PROJ_ID_A600CG) {
+			udelay(100); }
+
+
 	/* Clear status */
 	akm->is_busy = 0;
 	atomic_set(&akm->drdy, 0);
@@ -294,8 +305,8 @@ static int AKECS_SetMode(
 			"%s: Unknown mode(%d).", __func__, mode);
 		return -EINVAL;
 	}
-    /* wait at least 100us after changing mode */
-	udelay(100);
+	    if (Read_PROJ_ID() == PROJ_ID_A600CG) {
+			udelay(100); }
 	return err;
 }
 
