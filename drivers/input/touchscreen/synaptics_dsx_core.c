@@ -3373,7 +3373,11 @@ static int synaptics_rmi4_remove_proc(void)
  * and creates a work queue for detection of other expansion Function
  * modules.
  */
+#if LINUX_VERSION_CODE < KERNEL_VERSION(3, 8, 0)
 static int __devinit synaptics_rmi4_probe(struct platform_device *pdev)
+#else
+static int synaptics_rmi4_probe(struct platform_device *pdev)
+#endif
 {
 	int retval;
 	unsigned char attr_count;
@@ -3644,7 +3648,11 @@ err_regulator:
  * frees the interrupt, unregisters the driver from the input subsystem,
  * turns off the power to the sensor, and frees other allocated resources.
  */
+#if LINUX_VERSION_CODE < KERNEL_VERSION(3, 8, 0)
 static int __devexit synaptics_rmi4_remove(struct platform_device *pdev)
+#else
+static int synaptics_rmi4_remove(struct platform_device *pdev)
+#endif
 {
 	unsigned char attr_count;
 	struct synaptics_rmi4_data *rmi4_data = platform_get_drvdata(pdev);
@@ -4233,7 +4241,11 @@ static struct platform_driver synaptics_rmi4_driver = {
 #endif
 	},
 	.probe = synaptics_rmi4_probe,
+#if LINUX_VERSION_CODE < KERNEL_VERSION(3, 8, 0)
 	.remove = __devexit_p(synaptics_rmi4_remove),
+#else
+	.remove = synaptics_rmi4_remove,
+#endif
 };
 
  /**
