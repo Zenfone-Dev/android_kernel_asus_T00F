@@ -48,12 +48,23 @@
 #include <asm/intel-mid.h>
 #include <linux/hid.h>
 #include <linux/gpio.h>
-#define ATOMISP_INTERNAL_PM	(IS_BYT || IS_MOFD)
+#include <linux/proc_fs.h>
+
+
+#ifdef CONFIG_GMIN_INTEL_MID
+/* G-Min addition: pull this in from intel_mid_pm.h */
+#define CSTATE_EXIT_LATENCY_C1  1
+#endif
+
+#ifdef CONFIG_GMIN_INTEL_MID
+/* Moorefield lacks PCI PM, BYT advertises it but it's broken, use PUNIT */
+#define ATOMISP_INTERNAL_PM	(IS_MOFD || IS_BYT || IS_CHT)
+#endif
 
 static u8* buff_read_back;
 static u8 read_cmd[] =  {0,0,0,0,0,0,0,0};
-static struct class* Xe_flash_userCtrl_class;
-static struct device* Xe_flash_register_ctrl_dev;
+//static struct class* Xe_flash_userCtrl_class;
+//static struct device* Xe_flash_register_ctrl_dev;
 struct holtekff_device {
       struct hid_field *field;
 };
@@ -100,8 +111,9 @@ static ssize_t Xe_flash_send_cmd_store(struct device *dev,
 DEVICE_ATTR(send_cmd, 0660, Xe_flash_send_cmd_show, Xe_flash_send_cmd_store);
 //=================Start for amax interface=====================//
 
-static ssize_t app_interface_Xe_flash_send_cmd_show(struct device *dev,
-        struct device_attribute *attr, char *buf){
+
+static ssize_t app_interface_Xe_flash_send_cmd_show(struct file *dev, char *buf, size_t count, loff_t *ppos)
+{
 
     int ret;
 //    ret = sprintf(buf, "ASUS --- send_buff[0] is 0x%x, send_buff[1] is 0x%x\n", send_buff[0], send_buff[1]);
@@ -109,9 +121,8 @@ static ssize_t app_interface_Xe_flash_send_cmd_show(struct device *dev,
     return ret;
 }
 
-static ssize_t app_interface_Xe_flash_send_cmd_store(struct device *dev,
-        struct device_attribute *attr,
-        const char *buf, size_t count){
+static ssize_t app_interface_Xe_flash_send_cmd_store(struct file *dev,const char *buf, size_t count, loff_t *ppos)
+{
 	int i;
 	int run = count;
 	u8 send_buff[] = {0,0,0,0,0,0,0,0};
@@ -139,9 +150,8 @@ static ssize_t app_interface_Xe_flash_send_cmd_store(struct device *dev,
     return count;
 }
 
-DEVICE_ATTR(app_interface_send_cmd, 0660, app_interface_Xe_flash_send_cmd_show, app_interface_Xe_flash_send_cmd_store);
-static ssize_t app_interface_Xe_flash_rcv_cmd_show(struct device *dev,
-        struct device_attribute *attr, char *buf){
+static ssize_t app_interface_Xe_flash_rcv_cmd_show(struct file *dev, char *buf, size_t count, loff_t *ppos)
+{
 
     int ret;
     if(!buff_read_back) return 0;
@@ -154,9 +164,8 @@ static ssize_t app_interface_Xe_flash_rcv_cmd_show(struct device *dev,
     return ret;
 }
 
-static ssize_t app_interface_Xe_flash_rcv_cmd_store(struct device *dev,
-        struct device_attribute *attr,
-        const char *buf, size_t count){
+static ssize_t app_interface_Xe_flash_rcv_cmd_store(struct file *dev,const char *buf, size_t count, loff_t *ppos)
+{
 
     int i;
     int run = count;
@@ -178,7 +187,7 @@ static ssize_t app_interface_Xe_flash_rcv_cmd_store(struct device *dev,
     return count;
 }
 
-DEVICE_ATTR(app_interface_rcv_cmd, 0660, app_interface_Xe_flash_rcv_cmd_show, app_interface_Xe_flash_rcv_cmd_store);
+
 //=================End for amax interface=====================//
 static ssize_t Xe_flash_rcv_cmd_show(struct device *dev,
         struct device_attribute *attr, char *buf){
@@ -298,6 +307,7 @@ static ssize_t Xe_flash_debug_delay_store(struct device *dev,
 DEVICE_ATTR(debug_delay, 0660, Xe_flash_debug_delay_show, Xe_flash_debug_delay_store);
 
 
+
 int Xe_flash_on(struct v4l2_subdev *sd, u16 delay, u16 pulse)
 {
     u8 send_buff[] = {0,0,0,0,0,0,0,0};
@@ -317,6 +327,7 @@ int Xe_flash_on(struct v4l2_subdev *sd, u16 delay, u16 pulse)
     return 0;
 }
 
+#define ATOMISP_INTERNAL_PM	(IS_BYT || IS_MOFD)
 
 /* set reserved memory pool size in page */
 unsigned int repool_pgnr;
@@ -962,10 +973,13 @@ static int atomisp_csi_lane_config(struct atomisp_device *isp)
 
 static int atomisp_subdev_probe(struct atomisp_device *isp)
 {
+	
 	const struct atomisp_platform_data *pdata;
 	struct intel_v4l2_subdev_table *subdevs;
 	int raw_index = -1;
-
+	
+	printk("@%s\t begin isp->v4l2_dev.name:%s leong_p \n",__func__ , isp->v4l2_dev.name);
+	
 	pdata = atomisp_get_platform_data();
 	if (pdata == NULL) {
 		dev_err(isp->dev, "no platform data available\n");
@@ -1200,7 +1214,7 @@ static int atomisp_register_entities(struct atomisp_device *isp)
 	isp->inputs[isp->input_cnt].shading_table = NULL;
 	isp->inputs[isp->input_cnt].morph_table = NULL;
 	isp->inputs[isp->input_cnt].camera_caps =
-            atomisp_get_default_camera_caps();
+		    atomisp_get_default_camera_caps();
 	isp->inputs[isp->input_cnt++].camera = &isp->file_dev.sd;
 
 	if (isp->input_cnt < ATOM_ISP_MAX_INPUTS) {
@@ -1405,6 +1419,18 @@ extern bool atomisp_hmm_is_2400;
 
 #define ATOM_ISP_PCI_BAR	0
 
+
+static const struct file_operations proc_zenflash_send = {
+     .read       = app_interface_Xe_flash_send_cmd_show,
+     .write      = app_interface_Xe_flash_send_cmd_store,
+};
+
+
+static const struct file_operations proc_zenflash_rcv = {
+     .read       = app_interface_Xe_flash_rcv_cmd_show,
+     .write      = app_interface_Xe_flash_rcv_cmd_store,
+};
+
 static int atomisp_pci_probe(struct pci_dev *dev,
 				       const struct pci_device_id *id)
 {
@@ -1412,7 +1438,11 @@ static int atomisp_pci_probe(struct pci_dev *dev,
 	struct atomisp_device *isp;
 	unsigned int start;
 	void __iomem *base;
+	void __iomem * const *iomap;
 	int err;
+	void* dummy = NULL;
+	struct proc_dir_entry* proc_send_flash = NULL;
+	struct proc_dir_entry* proc_rcv_flash = NULL;
 
 	if (!dev) {
 		dev_err(&dev->dev, "atomisp: error device ptr\n");
@@ -1447,8 +1477,14 @@ static int atomisp_pci_probe(struct pci_dev *dev,
 		return err;
 	}
 
-	base = pcim_iomap_table(dev)[ATOM_ISP_PCI_BAR];
+	iomap = pcim_iomap_table(dev);
+	if (!iomap)
+		return -ENODEV;
+
+	base = iomap[ATOM_ISP_PCI_BAR];
 	dev_dbg(&dev->dev, "base: %p\n", base);
+	if (!base)
+		return -ENODEV;
 
 	atomisp_io_base = base;
 
@@ -1461,7 +1497,7 @@ static int atomisp_pci_probe(struct pci_dev *dev,
 	}
 	isp->xe_flash_pulse = 0;
     isp->xe_flash_delay = 0;
-    isp->pdev = dev;
+	isp->pdev = dev;
 	isp->dev = &dev->dev;
 	isp->sw_contex.power_state = ATOM_ISP_POWER_UP;
 	isp->pci_root = pci_get_bus_and_slot(0, 0);
@@ -1475,16 +1511,6 @@ static int atomisp_pci_probe(struct pci_dev *dev,
 	mutex_init(&isp->streamoff_mutex);
 	spin_lock_init(&isp->lock);
 
-	Xe_flash_userCtrl_class = class_create(THIS_MODULE, "Xe_flash_dev");
-    Xe_flash_register_ctrl_dev = device_create(Xe_flash_userCtrl_class, NULL, 0, "%s", "command");
-    device_create_file(Xe_flash_register_ctrl_dev, &dev_attr_app_interface_send_cmd);
-    device_create_file(Xe_flash_register_ctrl_dev, &dev_attr_app_interface_rcv_cmd);
-	device_create_file(Xe_flash_register_ctrl_dev, &dev_attr_send_cmd);
-    device_create_file(Xe_flash_register_ctrl_dev, &dev_attr_rcv_cmd);
-    device_create_file(Xe_flash_register_ctrl_dev, &dev_attr_debug_flag);
-    device_create_file(Xe_flash_register_ctrl_dev, &dev_attr_debug_delay);
-    device_create_file(Xe_flash_register_ctrl_dev, &dev_attr_debug_pulse);
-
 #ifndef CSS20
 	isp->media_dev.driver_version = ATOMISP_CSS_VERSION_15;
 #elif !defined(CSS21)
@@ -1492,6 +1518,12 @@ static int atomisp_pci_probe(struct pci_dev *dev,
 #else
 	isp->media_dev.driver_version = ATOMISP_CSS_VERSION_21;
 #endif
+
+	proc_send_flash = proc_create_data("zenflash_interface_send_cmd", 0666, NULL, &proc_zenflash_send, dummy);
+	proc_set_user(proc_send_flash, 1000, 1000);
+	proc_rcv_flash = proc_create_data("zenflash_interface_rcv_cmd", 0666, NULL, &proc_zenflash_rcv, dummy);
+	proc_set_user(proc_rcv_flash, 1000, 1000);
+
 	switch (id->device & ATOMISP_PCI_DEVICE_SOC_MASK) {
 	case ATOMISP_PCI_DEVICE_SOC_MRFLD:
 	case ATOMISP_PCI_DEVICE_SOC_MRFLD_FREQ_LIMITED:
@@ -1762,8 +1794,7 @@ static void __exit atomisp_exit(void)
 
 module_init(atomisp_init);
 module_exit(atomisp_exit);
-//EXPORT_SYMBOL_GPL(Xe_flash_on);
-EXPORT_SYMBOL_GPL(xe_debug_flag);
+
 MODULE_AUTHOR("Wen Wang <wen.w.wang@intel.com>");
 MODULE_AUTHOR("Xiaolin Zhang <xiaolin.zhang@intel.com>");
 MODULE_LICENSE("GPL");

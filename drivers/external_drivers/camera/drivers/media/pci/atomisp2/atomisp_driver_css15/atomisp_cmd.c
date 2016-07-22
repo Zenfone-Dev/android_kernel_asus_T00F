@@ -27,6 +27,7 @@
 #include <linux/kfifo.h>
 #include <linux/pm_runtime.h>
 #include <linux/timer.h>
+#include <linux/timer.h>
 #include <linux/hid-holtekff.h>
 #include <asm/intel-mid.h>
 
@@ -614,17 +615,17 @@ irqreturn_t atomisp_isr(int irq, void *dev)
 		 * either solely one stream is running
 		 */
 		if (irq_infos & CSS_IRQ_INFO_CSS_RECEIVER_SOF) {
-            atomic_inc(&asd->sof_count);
+			atomic_inc(&asd->sof_count);
 //            printk(KERN_INFO "ASUSBSP Xe_flash_on, squence is %d, sof_count is %d\n", (asd->sequence).counter, (asd->sof_count).counter);
 //            printk(KERN_INFO "ASUSBSP xe_flash_pulse is %d, xe_flash_delay is %d \n", isp->xe_flash_pulse, isp->xe_flash_delay);
 			if(isp->xe_flash_pulse
-               && isp->xe_flash_delay){ 
-                  if(asd->run_mode->val == ATOMISP_RUN_MODE_STILL_CAPTURE 
+               && isp->xe_flash_delay){
+                  if(asd->run_mode->val == ATOMISP_RUN_MODE_STILL_CAPTURE
                      && (asd->sof_count).counter==0){
-                       Xe_flash_on(NULL, isp->xe_flash_delay, isp->xe_flash_pulse); 
+                       Xe_flash_on(NULL, isp->xe_flash_delay, isp->xe_flash_pulse);
                     }
             }
-            atomisp_sof_event(asd);
+			atomisp_sof_event(asd);
 
 			/* If sequence_temp and sequence are the same
 			 * there where no frames lost so we can increase
@@ -740,18 +741,20 @@ void atomisp_set_term_en_count(struct atomisp_device *isp)
 
 	/* set TERM_EN_COUNT_1LANE to 0xf */
 	val &= ~TERM_EN_COUNT_1LANE_MASK;
-    if (0 == strncmp(isp->inputs[1].camera->name, "gc2155", strlen("gc2155"))){  // to judge if front-cam is gc2155
+	
+	if (0 == strncmp(isp->inputs[1].camera->name, "gc2155", strlen("gc2155"))){  // to judge if front-cam is gc2155
        val |= 0x19 << TERM_EN_COUNT_1LANE_OFFSET;
     }else{
-       val |= 0x24 << TERM_EN_COUNT_1LANE_OFFSET;
+       val |= 0x24 << TERM_EN_COUNT_1LANE_OFFSET;	// leong++   imx219
     }
 
 	/* set TERM_EN_COUNT_4LANE to 0xf */
 	val &= pwn_b0 ? ~TERM_EN_COUNT_4LANE_PWN_B0_MASK :
 				~TERM_EN_COUNT_4LANE_MASK;
-	val |= 0x1A << (pwn_b0 ? TERM_EN_COUNT_4LANE_PWN_B0_OFFSET :
+				
+	val |= 0x1A << (pwn_b0 ? TERM_EN_COUNT_4LANE_PWN_B0_OFFSET :     // leong++  imx219
 				TERM_EN_COUNT_4LANE_OFFSET);
-
+				
 	intel_mid_msgbus_write32(MFLD_IUNITPHY_PORT, MFLD_CSI_CONTROL, val);
 }
 
@@ -935,6 +938,7 @@ void atomisp_buf_done(struct atomisp_sub_device *asd, int error,
 	unsigned long irqflags;
 	struct atomisp_css_frame *frame = NULL;
 	struct atomisp_device *isp = asd->isp;
+
 	if (buf_type != CSS_BUFFER_TYPE_3A_STATISTICS &&
 	    buf_type != CSS_BUFFER_TYPE_DIS_STATISTICS &&
 	    buf_type != CSS_BUFFER_TYPE_OUTPUT_FRAME &&
@@ -961,10 +965,11 @@ void atomisp_buf_done(struct atomisp_sub_device *asd, int error,
 		dev_err(isp->dev, "error getting atomisp pipe\n");
 		return;
 	}
+
 	switch (buf_type) {
 		case CSS_BUFFER_TYPE_3A_STATISTICS:
 			/* ignore error in case of 3a statistics for now */
-            if (isp->sw_contex.invalid_s3a) {
+			if (isp->sw_contex.invalid_s3a) {
 				requeue = true;
 				isp->sw_contex.invalid_s3a = 0;
 				break;
@@ -979,7 +984,7 @@ void atomisp_buf_done(struct atomisp_sub_device *asd, int error,
 			break;
 		case CSS_BUFFER_TYPE_DIS_STATISTICS:
 			/* ignore error in case of dis statistics for now */
-            if (isp->sw_contex.invalid_dis) {
+			if (isp->sw_contex.invalid_dis) {
 				requeue = true;
 				isp->sw_contex.invalid_dis = 0;
 				break;
@@ -1007,28 +1012,21 @@ void atomisp_buf_done(struct atomisp_sub_device *asd, int error,
 			if (!frame->valid)
 				error = true;
 #endif
-//            printk(KERN_INFO "ASUSBSP --- asd->params.flash_state is %d \n", asd->params.flash_state);
-//			printk(KERN_INFO "ASUSBSP --- 001, squence is %d, sof_count is %d\n", (asd->sequence).counter, (asd->sof_count).counter);
-            if (asd->params.flash_state ==
+
+			if (asd->params.flash_state ==
 			    ATOMISP_FLASH_ONGOING) {
 				if (frame->flash_state
-				    == CSS_FRAME_FLASH_STATE_PARTIAL){
+				    == CSS_FRAME_FLASH_STATE_PARTIAL)
 					dev_dbg(isp->dev, "%s thumb partially "
 						"flashed\n", __func__);
-
-//                    printk(KERN_INFO "ASUSBSP3 --- PARTIAL, squence is %d, sof_count is %d\n", (asd->sequence).counter, (asd->sof_count).counter);
-				}else if (frame->flash_state
-					 == CSS_FRAME_FLASH_STATE_FULL){
+				else if (frame->flash_state
+					 == CSS_FRAME_FLASH_STATE_FULL)
 					dev_dbg(isp->dev, "%s thumb completely "
 						"flashed\n", __func__);
-				
-//                    printk(KERN_INFO "ASUSBSP3 --- FLASH_STATE_FULL, squence is %d, sof_count is %d\n", (asd->sequence).counter, (asd->sof_count).counter);
-                }else{
+				else
 					dev_dbg(isp->dev, "%s thumb no flash "
 						"in this frame\n", __func__);
-//		            printk(KERN_INFO "ASUSBSP3 --- else, squence is %d, sof_count is %d\n", (asd->sequence).counter, (asd->sof_count).counter);
-                }
-        	}
+			}
 			vb = atomisp_css_frame_to_vbuf(pipe, frame);
 			WARN_ON(!vb);
 			break;
@@ -1060,15 +1058,15 @@ void atomisp_buf_done(struct atomisp_sub_device *asd, int error,
 			    ATOMISP_FLASH_ONGOING) {
 				if (frame->flash_state
 				    == CSS_FRAME_FLASH_STATE_PARTIAL) {
-   					   if(!Xe_flash_inserted()){
-                           asd->frame_status[vb->i] =
-						   ATOMISP_FRAME_STATUS_FLASH_PARTIAL;
+					if(!Xe_flash_inserted()){
+					asd->frame_status[vb->i] =
+						ATOMISP_FRAME_STATUS_FLASH_PARTIAL;
                        }else{
                            asd->frame_status[vb->i] =
                            ATOMISP_FRAME_STATUS_FLASH_EXPOSED;
                        }
 //					   printk(KERN_INFO "ASUSBSP4 --- PARTIAL, squence is %d, sof_count is %d\n", (asd->sequence).counter, (asd->sof_count).counter);
-                       dev_dbg(isp->dev,
+					dev_dbg(isp->dev,
 						 "%s partially flashed\n",
 						 __func__);
 				} else if (frame->flash_state
@@ -1076,17 +1074,14 @@ void atomisp_buf_done(struct atomisp_sub_device *asd, int error,
 					asd->frame_status[vb->i] =
 						ATOMISP_FRAME_STATUS_FLASH_EXPOSED;
 					asd->params.num_flash_frames--;
-//                   printk(KERN_INFO "ASUSBSP4 --- EXPOSED, squence is %d, sof_count is %d\n", (asd->sequence).counter, (asd->sof_count).counter);
-                       //                        (asd->sequence).count,
-                       //                        (asd->sof_count).count);             
-                    dev_dbg(isp->dev,
+					dev_dbg(isp->dev,
 						 "%s completely flashed\n",
 						 __func__);
 				} else {
 //					printk(KERN_INFO "ASUSBSP4 --- NO FLASH, squence is %d, sof_count is %d\n", (asd->sequence).counter, (asd->sof_count).counter);
                        if(!Xe_flash_inserted()){
-                           asd->frame_status[vb->i] =
-						   ATOMISP_FRAME_STATUS_OK;
+					asd->frame_status[vb->i] =
+						ATOMISP_FRAME_STATUS_OK;
                        }else{
                            asd->frame_status[vb->i] =
                            ATOMISP_FRAME_STATUS_FLASH_EXPOSED;
@@ -1443,7 +1438,7 @@ void atomisp_setup_flash(struct atomisp_sub_device *asd)
 {
 	struct atomisp_device *isp = asd->isp;
 	struct v4l2_control ctrl;
-//    printk("ASUSBSP --- @atomisp_setup_flash, num_frames is %d \n", asd->params.num_flash_frames);
+
 	if (asd->params.flash_state != ATOMISP_FLASH_REQUESTED &&
 	    asd->params.flash_state != ATOMISP_FLASH_DONE)
 		return;
@@ -1452,12 +1447,6 @@ void atomisp_setup_flash(struct atomisp_sub_device *asd)
 		/* make sure the timeout is set before setting flash mode */
 		ctrl.id = V4L2_CID_FLASH_TIMEOUT;
 		ctrl.value = FLASH_TIMEOUT;
-
-        if(isp->xe_flash_pulse && isp->xe_flash_delay){
-            asd->params.flash_state = ATOMISP_FLASH_ONGOING;
-//            printk("ASUSBSP --- @atomisp_setup_flash, ATOMISP_FLASH_ONGOING \n");
-            return; 
-        }
 
 		if (v4l2_subdev_call(isp->flash, core, s_ctrl, &ctrl)) {
 			dev_err(isp->dev, "flash timeout configure failed\n");
@@ -1469,7 +1458,6 @@ void atomisp_setup_flash(struct atomisp_sub_device *asd)
 	} else {
 		asd->params.flash_state = ATOMISP_FLASH_IDLE;
 	}
-//    printk("ASUSBSP --- @atomisp_setup_flash, asd->params.flash_state is %d \n", asd->params.flash_state);
 }
 
 irqreturn_t atomisp_isr_thread(int irq, void *isp_ptr)
@@ -1696,7 +1684,7 @@ static u32 get_pixel_depth(u32 pixelformat)
 	case V4L2_PIX_FMT_SGBRG8:
 	case V4L2_PIX_FMT_SGRBG8:
 	case V4L2_PIX_FMT_SRGGB8:
-		return 16;
+		return 8;
 	default:
 		return 8 * 2;	/* raw type now */
 	}
@@ -3569,8 +3557,10 @@ static int atomisp_set_fmt_to_isp(struct video_device *vdev,
 		ATOMISP_SUBDEV_PAD_SINK, V4L2_SEL_TGT_CROP);
 
 	format = atomisp_get_format_bridge(pix->pixelformat);
-	if (format == NULL)
+	if (format == NULL) {
+		dev_err(isp->dev, "format %d is not supported\n", pix->pixelformat);
 		return -EINVAL;
+	}
 
 	if (isp->inputs[asd->input_curr].type != TEST_PATTERN &&
 		isp->inputs[asd->input_curr].type != FILE_INPUT) {
@@ -3584,8 +3574,13 @@ static int atomisp_set_fmt_to_isp(struct video_device *vdev,
 
 		if (format->sh_fmt == CSS_FRAME_FORMAT_RAW &&
 		     raw_output_format_match_input(
-			mipi_info->input_format, pix->pixelformat))
+						   mipi_info->input_format, pix->pixelformat)) {
+			dev_err(isp->dev,
+				"Input format 0x%x is not match with the output format 0x%x\n",
+				mipi_info->input_format,
+				pix->pixelformat);
 			return -EINVAL;
+		}
 	}
 
 	/*
@@ -3645,8 +3640,10 @@ static int atomisp_set_fmt_to_isp(struct video_device *vdev,
 
 	if (asd->continuous_mode->val) {
 		ret = __enable_continuous_mode(asd, true);
-		if (ret)
+		if (ret) {
+			dev_err(isp->dev, "enable continuous mode failed\n");
 			return -EINVAL;
+		}
 	}
 
 	atomisp_css_input_set_mode(asd, CSS_INPUT_MODE_SENSOR);
@@ -3953,7 +3950,6 @@ int atomisp_set_fmt(struct video_device *vdev, struct v4l2_format *f)
 	uint16_t source_pad = atomisp_subdev_source_pad(vdev);
 	struct v4l2_subdev_fh fh;
 	int ret;
-	int retry;
 
 	dev_dbg(isp->dev,
 		"setting resolution %ux%u on pad %u, bytesperline %u\n",
@@ -4066,18 +4062,23 @@ int atomisp_set_fmt(struct video_device *vdev, struct v4l2_format *f)
 	f->fmt.pix.width = snr_fmt.fmt.pix.width;
 	f->fmt.pix.height = snr_fmt.fmt.pix.height;
 
+	format_bridge = atomisp_get_format_bridge(snr_fmt.fmt.pix.pixelformat);
+	if (format_bridge == NULL)
+		return -EINVAL;
+
 	atomisp_subdev_get_ffmt(&asd->subdev, NULL,
 				V4L2_SUBDEV_FORMAT_ACTIVE,
 				ATOMISP_SUBDEV_PAD_SINK)->code =
-		atomisp_get_format_bridge(
-			snr_fmt.fmt.pix.pixelformat)->mbus_code;
+		format_bridge->mbus_code;
 
 	isp_sink_fmt = *atomisp_subdev_get_ffmt(&asd->subdev, NULL,
 					    V4L2_SUBDEV_FORMAT_ACTIVE,
 					    ATOMISP_SUBDEV_PAD_SINK);
+	format_bridge = atomisp_get_format_bridge(f->fmt.pix.pixelformat);
+	if (format_bridge == NULL)
+		return -EINVAL;
 
-	isp_source_fmt.code = atomisp_get_format_bridge(
-		f->fmt.pix.pixelformat)->mbus_code;
+	isp_source_fmt.code = format_bridge->mbus_code;
 	atomisp_subdev_set_ffmt(&asd->subdev, &fh,
 				V4L2_SUBDEV_FORMAT_ACTIVE,
 				source_pad, &isp_source_fmt);
@@ -4086,11 +4087,6 @@ int atomisp_set_fmt(struct video_device *vdev, struct v4l2_format *f)
 		padding_w = 0, padding_h = 0;
 
 	if (IS_BYT) {
-		padding_w = 12;
-		padding_h = 12;
-	}
-
-	if(!(strncmp(isp->inputs[asd->input_curr].camera->name,"hm2056", 6))){
 		padding_w = 12;
 		padding_h = 12;
 	}
@@ -4125,16 +4121,9 @@ int atomisp_set_fmt(struct video_device *vdev, struct v4l2_format *f)
 	    isp_sink_fmt.width < (f->fmt.pix.width + padding_w + dvs_env_w) ||
 	     isp_sink_fmt.height < (f->fmt.pix.height + padding_h +
 				    dvs_env_h)) {
-		for(retry = 0; retry < 10;retry ++){
-			ret = atomisp_set_fmt_to_snr(vdev, f, f->fmt.pix.pixelformat,padding_w, padding_h,dvs_env_w, dvs_env_h);
-			if(ret){
-				mdelay(10);
-				printk("@%s atomisp_set_fmt_to_snr = %d ,retry %d times",__func__,ret,retry);
-			}else{
-				break;
-			}
-		}
-
+		ret = atomisp_set_fmt_to_snr(vdev, f, f->fmt.pix.pixelformat,
+					     padding_w, padding_h,
+					     dvs_env_w, dvs_env_h);
 		if (ret)
 			return -EINVAL;
 
@@ -4515,15 +4504,14 @@ int atomisp_offline_capture_configure(struct atomisp_sub_device *asd,
 int atomisp_flash_enable(struct atomisp_sub_device *asd, int num_frames)
 {
 	struct atomisp_device *isp = asd->isp;
-    printk("ASUSBSP --- @atomisp_flash_enable, num_frames is %d \n", num_frames);
+
 	if (num_frames < 0) {
 		dev_dbg(isp->dev, "%s ERROR: num_frames: %d\n", __func__,
 				num_frames);
 		return -EINVAL;
 	}
 	/* a requested flash is still in progress. */
-    
-    if (num_frames && asd->params.flash_state != ATOMISP_FLASH_IDLE) {
+	if (num_frames && asd->params.flash_state != ATOMISP_FLASH_IDLE) {
 		dev_dbg(isp->dev, "%s flash busy: %d frames left: %d\n",
 				__func__, asd->params.flash_state,
 				asd->params.num_flash_frames);
