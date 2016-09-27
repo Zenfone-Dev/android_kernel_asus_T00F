@@ -19,4 +19,5 @@ mpi-y = \
 	mpih-div.o			\
 	mpih-mul.o			\
 	mpi-pow.o			\
-	mpiutil.o
+	mpiutil.o			\
+	mpi-inline.o
